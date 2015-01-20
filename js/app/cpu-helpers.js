@@ -1,6 +1,6 @@
-(function() {
+define(['sprintf'], function(sprintf) {
   "use strict"
-  JSGBC.CPUISAHelpers = {
+  return {
     // code generation helpers
     // loads
     ld: function(dest, src) {
@@ -454,4 +454,4 @@
       return Object.keys(operand)[0];
     }
   }
-)}();
+});

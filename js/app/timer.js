@@ -1,18 +1,8 @@
-(function() {
+define(['./cpu'], function(cpu) {
   "use strict"
-  var IRQ_TIMER = 2;
-
-  JSGBC.Timer = {
-    create: function(gbc) {
-      var timer = Object.create(JSGBC.Timer.proto);
-      timer.init(gbc);
-      return timer;
-    }
-  }
-
-  JSGBC.Timer.proto = {
-    init: function(gbc) {
-      this.gbc = gbc;
+  var proto = {
+    init: function(cpu) {
+      this.cpu = cpu;
       this.clock = 0;
 
       this.tma = 0;
@@ -44,7 +34,7 @@
       }
       this.timaStart = this.clock;
       this.timaBase = value;
-      this.gbc.cpu.updateTiming();
+      this.cpu.updateTiming();
       return value;
     },
     tmaOp: function(read, value) {
@@ -66,13 +56,13 @@
       }
       this.started = newStarted;
       this.clockSelect = value & 0x03;
-      this.gbc.cpu.updateTiming();
+      this.cpu.updateTiming();
       return value;
     },
     overflow: function() {
       this.timaStart = this.clock;
       this.timaBase = this.tma;
-      this.gbc.cpu.irq(IRQ_TIMER);
+      this.cpu.irq(cpu.irqs.timer);
     },
     nextOverflowClock: function() {
       if(!this.started)
@@ -81,4 +71,12 @@
       return diff << this.shifts[this.clockSelect] + this.timaStart;
     }
   }
-})();
+
+  return {
+    create: function(cpu) {
+      var timer = Object.create(proto);
+      timer.init(cpu);
+      return timer;
+    }
+  }
+});

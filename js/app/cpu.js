@@ -1,22 +1,17 @@
-(function() {
+define(['./cpu-isa', function(isa) {
   "use strict"
   var RUN_INSTRUCTIONS = 1;
   var RUN_INTERRUPT = 2;
   var RUN_DMA = 3;
-  var IRQ_VBLANK = 0;
-  var IRQ_LCD = 1;
-  var IRQ_SERIAL = 3;
-  var IRQ_JOYPAD = 4;
 
-  JSGBC.CPU = {
-    create: function(memory) {
-      var cpu = Object.create(JSGBC.CPU.proto);
-      cpu.init(memory);
-      return cpu;
-    },
-  }
+  var irqs = {
+    vblank: 0,
+    lcd: 1,
+    serial: 3,
+    joypad: 4
+  };
 
-  JSGBC.CPU.proto = {
+  var proto = {
     init: function(memory) {
       this.clock = 0;
 
@@ -44,10 +39,10 @@
       this.irqcount = 0;
       this.vectors = [0x0040, 0x0048, 0x0050, 0x0058, 0x0060];
 
-      this.ops = JSGBC.CPUISA.generateOps();
-      this.disasm = JSGBC.CPUISA.generateDisasm();
-      this.cbops = JSGBC.CPUISA.generateCBOps();
-      this.cbdisasm = JSGBC.CPUISA.generateCBDisasm();
+      this.ops = isa.generateOps();
+      this.disasm = isa.generateDisasm();
+      this.cbops = isa.generateCBOps();
+      this.cbdisasm = isa.generateCBDisasm();
     },
     run: function(clocks) {
     },
@@ -139,4 +134,13 @@
       this.fc = (value >> 4) & 1;
     },
   }
-})();
+
+  return {
+    create: function(memory) {
+      var cpu = Object.create(proto);
+      cpu.init(memory);
+      return cpu;
+    },
+    irqs: irqs
+  }
+});

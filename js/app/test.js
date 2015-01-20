@@ -1,15 +1,16 @@
-(function() {
+define(function(require) {
   "use strict"
+  var cpuIsa = require('./cpu-isa');
+  var modules = [];
+  modules.push(['cpu-isa', cpuIsa]);
 
-  function test() {
+  return function() {
     var success = true;
     var exp = null;
-    //var modules = ['GBC', 'EventManager', 'CPU'];
-    var modules = ['CPUISA'];
     for(var i = 0; i < modules.length; i++) {
-      var res = JSGBC[modules[i]].test();
+      var res = modules[i][1].test();
       if(!res) {
-        console.log(modules[i], "failed");
+        console.log(modules[i][0], "failed");
       }
       success = success && res;
     }
@@ -19,4 +20,4 @@
       return "PASS";
     }
   }
-})();
+});

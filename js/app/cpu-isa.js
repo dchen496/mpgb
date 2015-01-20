@@ -1,9 +1,6 @@
-(function() {
+define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder) {
   "use strict"
-  var ops = JSGBC.CPUISAOps;
-  var decoder = JSGBC.CPUISADecoder;
-
-  JSGBC.CPUISA = {
+  return {
     generateOpStr: function(i) {
       var decoded = decoder.getInstruction(i);
       if(decoded.length == 1) {
@@ -75,6 +72,8 @@
           } catch(e) {
             console.log("compile error:", i, e, func);
           }
+        } else {
+          console.log("instruction undefined", i);
         }
       }
       console.log(x, "of 256 instructions defined", x / 256.0 * 100.0, "%");
@@ -91,4 +90,4 @@
       return out.join("\n");
     }
   }
-})();
+});

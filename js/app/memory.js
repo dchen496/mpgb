@@ -1,12 +1,5 @@
-(function() {
+define(function() {
   "use strict"
-  JSGBC.Memory = {
-    create: function(gbc) {
-      var mem = Object.create(JSGBC.Memory.proto);
-      mem.init(gbc);
-      return mem;
-    }
-  }
 
   /*
    * Memory Map
@@ -25,7 +18,7 @@
    * FFFF        Interrupt Enable Register
    */
 
-  JSGBC.Memory.proto = {
+  var proto = {
     init: function(gbc) {
       this.gbc = gbc;
       this.wram = new Uint8Array(0x8000);
@@ -187,4 +180,12 @@
       return this.cpu.ienableOp(read, value);
     },
   }
-})();
+
+  return {
+    create: function(gbc) {
+      var mem = Object.create(proto);
+      mem.init(gbc);
+      return mem;
+    }
+  }
+})
