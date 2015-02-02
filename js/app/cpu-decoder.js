@@ -1,7 +1,7 @@
 define(function() {
   "use strict"
   // operand tables
-  var rm8 = [ // r
+  var r = [ // r
     {reg: "b"}, 
     {reg: "c"}, 
     {reg: "d"}, 
@@ -11,18 +11,20 @@ define(function() {
     {ind: "hl"},
     {reg: "a"}
   ];
-  var rm16sp = [ // rp
+  var rp = [ // rp
     {reg16: "bc"},
     {reg16: "de"},
     {reg16: "hl"},
     {reg16: "sp"}
   ];
-  var rm16af = [ // rp2
+  var rp2 = [ // rp2
     {reg16: "bc"},
     {reg16: "de"},
     {reg16: "hl"},
     {reg16: "af"}
   ];
+  var alu = ["add", "adc", "sub", "sbc", "and", "xor", "or", "cp"];
+  var cc = ["nz", "z", "nc", "c"];
 
   var x = [];
   x[0] = function(y, z, p, q) {
@@ -40,14 +42,14 @@ define(function() {
       case 3:
         return ["jr d"];
       default:
-        return ["jr cc[y-4],d", y-4];
+        return ["jr cc[y-4],d", cc[y-4]];
     }
   }
   x0z[1] = function(y, p, q) {
     if(q == 0) { 
-      return ["ld rp[p],nn", rm16sp[p]];
+      return ["ld rp[p],nn", rp[p]];
     } else {
-      return ["add hl,rp[p]", rm16sp[p]];
+      return ["add hl,rp[p]", rp[p]];
     }
   }
   x0z[2] = function(y, p, q) {
@@ -60,7 +62,7 @@ define(function() {
         case 2:
           return ["ldi (hl),a"];
         case 3:
-          return ["ldi a,(hl)"];
+          return ["ldd (hl),a"];
       }
     }
     switch(p) {
@@ -69,26 +71,26 @@ define(function() {
       case 1:
         return ["ld a,(de)"];
       case 2:
-        return ["ldd (hl),a"];
+        return ["ldi a,(hl)"];
       case 3:
         return ["ldd a,(hl)"];
     }
   }
   x0z[3] = function(y, p, q) {
     if(q == 0) { 
-      return ["inc rp[p]", rm16sp[p]];
+      return ["inc rp[p]", rp[p]];
     } else { 
-      return ["dec rp[p]", rm16sp[p]];
+      return ["dec rp[p]", rp[p]];
     }
   }
   x0z[4] = function(y, p, q) {
-    return ["inc r[y]", rm8[y]];
+    return ["inc r[y]", r[y]];
   }
   x0z[5] = function(y, p, q) {
-    return ["dec r[y]", rm8[y]];
+    return ["dec r[y]", r[y]];
   }
   x0z[6] = function(y, p, q) {
-    return ["ld r[y],n", rm8[y]];
+    return ["ld r[y],n", r[y]];
   }
   x0z[7] = function(y, p, q) {
     switch(y) {
@@ -116,12 +118,12 @@ define(function() {
       // halt
       return ["halt"];
     } else {
-      return ["ld r[y],r[z]", rm8[y], rm8[z]];
+      return ["ld r[y],r[z]", r[y], r[z]];
     }
   }
 
   x[2] = function(y, z, p, q) {
-    return ["alu[y] r[z]", y, rm8[z]];
+    return ["alu[y] r[z]", alu[y], r[z]];
   }
 
   x[3] = function(y, z, p, q) {
@@ -133,18 +135,18 @@ define(function() {
     case 4:
       return ["ld (ff00+n),a"];
     case 5:
-      return ["add sp,dd"];
+      return ["add sp,d"];
     case 6:
       return ["ld a,(ff00+n)"];
     case 7:
-      return ["ld hl,(sp+dd)"];
+      return ["ld hl,(sp+d)"];
     default:
-      return ["ret cc[y]", y];
+      return ["ret cc[y]", cc[y]];
     }
   }
   x3z[1] = function(y, p, q) {
     if(q == 0) {
-      return ["pop rp2[p]", rm16af[p]];
+      return ["pop rp2[p]", rp2[p]];
     } else {
       switch(p) {
       case 0:
@@ -169,7 +171,7 @@ define(function() {
     case 7:
       return ["ld a,(nn)"];
     default:
-      return ["jp cc[y],nn", y];
+      return ["jp cc[y],nn", cc[y]];
     }
   }
   x3z[3] = function(y, p, q) {
@@ -194,7 +196,7 @@ define(function() {
   }
   x3z[4] = function(y, p, q) {
     if(y < 4) {
-      return ["call cc[y],nn", y];
+      return ["call cc[y],nn", cc[y]];
     } else {
       // undefined
       return ["undef"];
@@ -202,7 +204,7 @@ define(function() {
   }
   x3z[5] = function(y, p, q) {
     if(q == 0) {
-      return ["push rp2[p]", rm16af[p]];
+      return ["push rp2[p]", rp2[p]];
     } else {
       if(p == 0) {
         return ["call nn"];
@@ -213,7 +215,7 @@ define(function() {
     }
   }
   x3z[6] = function(y, p, q) {
-    return ["alu[y] n", y];
+    return ["alu[y] n", alu[y]];
   }
   x3z[7] = function(y, p, q) { 
     return ["rst y*8", y*8];
@@ -233,14 +235,21 @@ define(function() {
       var z = opcode & 0x7;
       switch(x) {
       case 0:
-        return ["rot y,r[z]", y, rm8[z]];
+        return ["rot y,r[z]", y, r[z]];
       case 1:
-        return ["bit y,r[z]", y, rm8[z]];
+        return ["bit y,r[z]", y, r[z]];
       case 2:
-        return ["res y,r[z]", y, rm8[z]];
+        return ["res y,r[z]", y, r[z]];
       case 3:
-        return ["set y,r[z]", y, rm8[z]];
+        return ["set y,r[z]", y, r[z]];
       }
+    },
+    tables: {
+      r: r,
+      rp: rp,
+      rp2: rp2,
+      alu: alu,
+      cc: cc
     }
   }
 });

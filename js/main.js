@@ -6,6 +6,6 @@ requirejs.config({
 });
 
 // Start the main app logic.
-requirejs(['app/test'], function(test) {
-  test();
+requirejs(['app/main'], function(main) {
+  main();
 });

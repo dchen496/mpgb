@@ -1,9 +1,9 @@
-define(['./cpu'], function(cpu) {
+define(['./cpu', './event-manager'], function(cpu, evm) {
   "use strict"
   var proto = {
-    init: function(cpu) {
+    init: function(cpu, evm) {
       this.cpu = cpu;
-      this.clock = 0;
+      this.evm = evm;
 
       this.tma = 0;
       this.started = 0;
@@ -11,30 +11,29 @@ define(['./cpu'], function(cpu) {
 
       this.divStart = 0;
 
-      this.timaStart = 0;
       this.timaBase = 0;
+      this.timaBaseClock = 0;
 
       this.shifts = [10, 4, 6, 8];
     },
     divOp: function(read, value) {
       if(read) {
-        var cycles = (this.clock - this.divStart) >> 8;
+        var cycles = (this.cpu.clock - this.divStart) >> 8;
         return cycles & 0xff;
       }
-      this.divStart = this.clock;
+      this.divStart = this.cpu.clock;
       return 0;
     },
     timaOp: function(read, value) {
       if(read) {
         if(this.started) {
           var shift = this.shifts[this.clockSelect];
-          return (this.clock - this.timaStart) >> shift + this.timaBase;
+          return (this.cpu.clock - this.timaBaseClock) >> shift + this.timaBase;
         }
         return this.timaBase;
       }
-      this.timaStart = this.clock;
-      this.timaBase = value;
-      this.cpu.updateTiming();
+      this.timaBaseClock = this.cpu.clock;
+      this.updateOverflowEvent();
       return value;
     },
     tmaOp: function(read, value) {
@@ -45,32 +44,36 @@ define(['./cpu'], function(cpu) {
       return value;
     },
     tacOp: function(read, value) {
+      var oldTac = this.started << 2 | this.clockSelect;
       if(read) {
-        return this.started << 2 | this.clockSelect;
+        return oldTac;
       }
-      var newStarted = (value & 0x04) >> 2;
-      if(!this.started && newStarted) { // enable
-        this.timaStart = this.clock;
-      } else if(this.started && !newStarted) { // disable
-        this.timaBase = this.timaOp(true, 0);
-      }
-      this.started = newStarted;
+      value &= 0x07;
+      if(value == oldTac)
+        return;
+      // store the old value of TIMA
+      this.timaBase = this.timaOp(true, 0);
+      this.timaBaseClock = this.cpu.clock;
       this.clockSelect = value & 0x03;
-      this.cpu.updateTiming();
+      this.started = value & 0x01;
+      this.updateOverflowEvent();
       return value;
     },
-    overflow: function() {
-      this.timaStart = this.clock;
-      this.timaBase = this.tma;
-      this.cpu.irq(cpu.irqs.timer);
+    updateOverflowEvent: function() {
+      if(this.started) {
+        var shift = this.shifts[this.clockSelect];
+        var ov = (0x100 - this.timaBase) << shift + this.timaBaseClock;
+        this.evm.register(evm.events.TIMER_OVERFLOW, ov, overflowCallback);
+      }
+      this.evm.unregister(evm.events.TIMER_OVERFLOW);
     },
-    nextOverflowClock: function() {
-      if(!this.started)
-        return -1;
-      var diff = 0x100 - this.timaBase;
-      return diff << this.shifts[this.clockSelect] + this.timaStart;
+    overflowCallback: function(clock) {
+      this.timaBase = this.tma;
+      this.timaBaseClock = clock;
+      this.cpu.irq(cpu.irqvectors.TIMER);
+      this.updateOverflowEvent();
     }
-  }
+  };
 
   return {
     create: function(cpu) {
@@ -78,5 +81,5 @@ define(['./cpu'], function(cpu) {
       timer.init(cpu);
       return timer;
     }
-  }
+  };
 });

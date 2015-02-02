@@ -1,4 +1,4 @@
-(function() {
+define(function() {
   "use strict"
   var proto = {
     init: function(gbc) {

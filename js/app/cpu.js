@@ -1,14 +1,20 @@
-define(['./cpu-isa', function(isa) {
+define['./cpu-isa', function(isa) {
   "use strict"
-  var RUN_INSTRUCTIONS = 1;
-  var RUN_INTERRUPT = 2;
-  var RUN_DMA = 3;
 
-  var irqs = {
-    vblank: 0,
-    lcd: 1,
-    serial: 3,
-    joypad: 4
+  var irqvectors = {
+    VBLANK: 0,
+    LCD: 1,
+    TIMER: 2,
+    SERIAL: 3,
+    JOYPAD: 4
+  };
+
+  var states = {
+    NORMAL,
+    IRQ,
+    HALTED,
+    STOPPED
+//    HDMA for GBC
   };
 
   var proto = {
@@ -35,94 +41,97 @@ define(['./cpu-isa', function(isa) {
       this.fc = 0;
 
       this.ime = 0;
-      this.iflag = [0, 0, 0, 0, 0];
-      this.irqcount = 0;
-      this.vectors = [0x0040, 0x0048, 0x0050, 0x0058, 0x0060];
+      this.iflags = 0;
+      this.ienables = 0;
+      this.ivectors = [0x0040, 0x0048, 0x0050, 0x0058, 0x0060];
 
       this.ops = isa.generateOps();
-      this.disasm = isa.generateDisasm();
       this.cbops = isa.generateCBOps();
-      this.cbdisasm = isa.generateCBDisasm();
+
+      this.state = states.NORMAL;
     },
-    run: function(clocks) {
-    },
-    runInstructions: function(clocks) {
-      var startClock = this.clock;
-      var stopClock = startClock + clocks;
-      while(this.clock < stopClock) {
-        var opcode = this.memory.op(this.pc, true, 0);
-        this.ops[opcode]();
-        if(this.state != this.RUN_INSTRUCTIONS) {
-          return this.clock - startClock;
+    advanceToEvent: function(evm) {
+      while(this.clock < evm.nextClock()) {
+        switch(this.state) {
+        case states.NORMAL:
+          while(this.clock < evm.nextClock() && this.state == states.NORMAL) {
+            var opcode = this.memory.read(this.pc);
+            this.ops[opcode]();
+          }
+          break;
+        case states.IRQ:
+          this.handleIrq();
+          this.state = NORMAL;
+          break;
+        case states.HALTED:
+          this.clock = evm.nextClock();
+          break;
+        case states.STOPPED:
+          this.clock = evm.nextClock();
+          break;
+        /*
+        case states.HDMA:
+          throw("cpu hdma mode not implemented");
+        */
         }
       }
+      return this.clock;
     },
-    runInterrupt: function() {
-      if(!this.ime || this.irqcount <= 0)
-        return 0;
+    handleIrq: function() {
+      var irqs = this.ienables & this.iflags;
+      this.processIrqs = false;
+      if(!this.ime || !irqs)
+        return;
       for(var i = 0; i < 5; i++) {
-        if(this.ienable[vector] && this.iflag[i]) {
-          this.irqcount--;
-          this.iflag[i] = 0;
+        if(irqs & (1 << i)) {
+          this.iflags &= ~(1 << i);
           this.ime = 0;
-
+          // push pc onto stack
           this.sp = (this.sp + 0xfffe) & 0xffff;
-          this.memory.op16(this.sp, false, this.pc);
-          this.pc = this.vectors[i];
-
-          return 16; // estimated 16-cycle interrupt latency
+          this.memory.write16(this.sp, this.pc);
+          this.pc = this.ivectors[i];
+          // estimated 16-cycle interrupt latency
+          this.clock += 16;
         }
       }
-      return 0;
     },
-
     irq: function(vector) {
-      this.iflag[vector] = 1;
-      if(this.ienable[vector]) 
-        this.irqcount++;
+      this.iflags |= (1 << vector);
+      this.checkPendingIrq();
     },
-    
-
     iflagOp: function(read, value) {
       if(read) {
-        var res = 0;
-        for(var i = 0; i < 5; i++) {
-          res |= (this.iflag[i] << i);
-        }
-        return res;
+        return this.iflags & 0x1F;
       }
-      for(var i = 0; i < 5; i++) {
-        if(value & (1 << i)) {
-          this.iflag[i] = 1;
-        } else {
-          this.iflag[i] = 0;
-        }
-      }
+      this.iflags = value & 0x1F;
+      this.checkPendingIrq();
+      return this.iflags;
     },
     ienableOp: function(read, value) {
       if(read) {
-        var res = 0;
-        for(var i = 0; i < 5; i++) {
-          res |= (this.ienable[i] << i);
-        }
-        return res;
+        return this.ienables & 0x1F;
       }
-      for(var i = 0; i < 5; i++) {
-        if(value & (1 << i)) {
-          this.ienable[i] = 1;
-          if(this.iflag[vector])
-            this.irqcount++;
-        } else {
-          this.ienable[i] = 0;
-          if(this.iflag[vector])
-            this.irqcount--;
-        }
-      }
+      this.ienables = value & 0x1F;
+      this.checkPendingIrq();
+      return this.ienables;
     },
-
+    di: function() {
+      this.ime = 0;
+      this.checkPendingIrq();
+    },
+    ei: function() {
+      // TODO: investigate timings when EI/RETI are themselves interrupted
+      this.ime = 1;
+      this.checkPendingIrq();
+    },
+    checkPendingIrq: function() {
+      this.state = this.ime && (this.iflags & this.ienables);
+    },
     stop: function() {
+      this.state = STOPPED;
     },
     halt: function() {
+      this.state = HALTED;
     },
     getF: function(value) {
       return (this.fz << 7) | (this.fn << 6) | (this.fh << 5) | (this.fc << 4);
@@ -132,7 +141,7 @@ define(['./cpu-isa', function(isa) {
       this.fn = (value >> 6) & 1; 
       this.fh = (value >> 5) & 1; 
       this.fc = (value >> 4) & 1;
-    },
+    }
   }
 
   return {
@@ -141,6 +150,6 @@ define(['./cpu-isa', function(isa) {
       cpu.init(memory);
       return cpu;
     },
-    irqs: irqs
+    irqvectors: irqvectors
   }
 });

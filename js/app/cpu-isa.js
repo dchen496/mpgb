@@ -4,12 +4,18 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
     generateOpStr: function(i) {
       var decoded = decoder.getInstruction(i);
       if(decoded.length == 1) {
-        var func = ops[decoded[0]];
-      } else {
-        var func = ops[decoded[0]].apply(this, decoded.slice(1));
+        return ops.ops[decoded[0]].op;
       }
-      return func;
+      return ops.ops[decoded[0]].op.apply(this, decoded.slice(1));
     },
+    generateCBOpStr: function(i) {
+      var decoded = decoder.getCBInstruction(i);
+      if(decoded.length == 1) {
+        return ops.cbOps[decoded[0]].op;
+      }
+      return ops.cbOps[decoded[0]].op.apply(this, decoded.slice(1));
+    },
+
     generateOps: function() {
       var ops = Array(256);
       for(var i = 0; i < 256; i++) {
@@ -17,35 +23,12 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
       }
       return instructions;
     },
-    generateDisasm: function() {
-      var disasm = Array(256);
-      for(var i = 0; i < 256; i++) {
-        disasm[i] = JSON.stringify(decoder.getInstruction(i));
-      }
-      return disasm;
-    },
-    generateCBOpStr: function(i) {
-      var decoded = decoder.getCBInstruction(i);
-      if(decoded.length == 1) {
-        var func = ops[decoded[0]];
-      } else {
-        var func = ops[decoded[0]].apply(this, decoded.slice(1));
-      }
-      return func;
-    },
     generateCBOps: function() {
       var ops = Array(256);
       for(var i = 0; i < 256; i++) {
         ops[i] = Function(this.generateCBOpStr(i));
       }
       return instructions;
-    },
-    generateCBDisasm: function() {
-      var disasm = Array(256);
-      for(var i = 0; i < 256; i++) {
-        disasm[i] = JSON.stringify(decoder.getCBInstruction(i));
-      }
-      return disasm;
     },
 
     test: function() {

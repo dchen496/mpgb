@@ -1,4 +1,4 @@
-define(['sprintf'], function(sprintf) {
+define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
   "use strict"
   return {
     // code generation helpers
@@ -54,36 +54,12 @@ define(['sprintf'], function(sprintf) {
     // ALU operations
     aluOp: function(operator, operand) {
       var func;
-      var setZero = this.setFlag("z", "tmp == 0");
-      switch(operator) {
-        case 0: // add a, operand
-          func = this.add(operand);
-          break;
-        case 1: // adc a, operand
-          func = this.adc(operand);
-          break;
-        case 2: // sub operand
-          func = this.sub(operand);
-          break;
-        case 3: // sbc a, operand
-          func = this.sbc(operand);
-          break;
-        case 4: // and operand
-          func = this.and(operand);
-          break;
-        case 5: // xor operand
-          func = this.xor(operand);
-          break;
-        case 6: // or operand
-          func = this.or(operand);
-          break;
-        case 7: // cp operand
-          func = this.cp(operand);
-          break;
-        default:
-          throw("bad alu op");
+      if(decoder.tables.alu.indexOf(operator) < 0) {
+        throw("bad alu op " + operator);
       }
-      return func + setZero + this.incPcOperand([operand]) +
+      return this[operator](operand) + 
+        this.setFlag("z", "tmp == 0") + 
+        this.incPcOperand([operand]) +
         this.incClockOperand(operand, this.aluClocks);
     },
     aluClocks: {
@@ -209,53 +185,27 @@ define(['sprintf'], function(sprintf) {
     },
     // conditionals
     cond: function(condition, trueCode, falseCode) {
-      switch(condition) {
-        case 0: // nz
-          return sprintf("if(this.fz == 0) {%s} else {%s}", trueCode, falseCode);
-        case 1: // z
-          return sprintf("if(this.fz != 0) {%s} else {%s}", trueCode, falseCode);
-        case 2: // nc
-          return sprintf("if(this.fc == 0) {%s} else {%s}", trueCode, falseCode);
-        case 3: // c
-          return sprintf("if(this.fc != 0) {%s} else {%s}", trueCode, falseCode);
-        default: 
-          throw("bad condition");
+      var conds = {
+        "nz" : "this.fz == 0",
+        "z" : "this.fz != 0",
+        "nc" : "this.fc == 0",
+        "c" : "this.fc != 0"
       }
+      if(conds[condition] == null) {
+        throw("bad condition " + condition);
+      }
+      return sprintf("if(%s) {%s} else {%s}", conds[condition], trueCode, falseCode);
     },
     // rotation/shift operations
     rotOp: function(operator, operand) {
-      var func;
-      switch(operator) {
-        case 0: // rlc operand
-          func = this.rlc(operand);
-          break;
-        case 1: // rrc operand
-          func = this.rrc(operand);
-          break;
-        case 2: // rl operand
-          func = this.rl(operand);
-          break;
-        case 3: // rr operand
-          func = this.rr(operand);
-          break;
-        case 4: // sla operand
-          func = this.sla(operand);
-          break;
-        case 5: // sra operand
-          func = this.sra(operand);
-          break;
-        case 6: // swap operand
-          func = this.swap(operand);
-          break;
-        case 7: // srl operand
-          func = this.srl(operand);
-          break;
-        default:
-          throw("bad alu op");
+      var rots = ["rlc", "rrc", "rl", "rr", "sla", "sra", "swap", "srl"];
+      if(rots.indexOf(operator) < 0) {
+        throw("bad rotation op " + operator);
       }
       // flag behavior of rlc a and rlca (and similar) are different
-      var setZero = this.setFlag("z", "tmp == 0");
-      return func + setZero + this.incPc(1) +
+      return this[operator](operand) + 
+        this.setFlag("z", "tmp == 0") +
+        this.incPc(1) +
         this.incClockOperand(operand, this.rotClocks);
     },
     rlc: function(operand) {
@@ -339,21 +289,17 @@ define(['sprintf'], function(sprintf) {
     // ind: indirect 8-bit through register pair (in, out)
     // ind16: indirect 16-bit through register pair (in, out)
     operandLens: {
-      imm: 1,
-      imm16: 2,
-      ima: 2,
-      ima16: 2,
-      reg: 0,
-      reg16: 0,
-      ind: 0,
-      ind16: 0
+      imm: 1, imm16: 2,
+      ima: 2, ima16: 2,
+      reg: 0, reg16: 0,
+      ind: 0, ind16: 0
     },
     input8: function(src, name) {
       if("imm" in src) {
-        return sprintf("var %s = this.memory.op(this.pc + %d, true, 0);", name, src.imm);
+        return sprintf("var %s = this.memory.read(this.pc + %d);", name, src.imm);
       }
       if("ima" in src) {
-        return sprintf("var %s = this.memory.op(this.memory.op16(this.pc + %d, true, 0), true, 0);", name, src.ima);
+        return sprintf("var %s = this.memory.read(this.memory.read16(this.pc + %d));", name, src.ima);
       }
       if("reg" in src) {
         if(src.reg == "f") {
@@ -362,14 +308,14 @@ define(['sprintf'], function(sprintf) {
         return sprintf("var %s = this.%s;", name, src.reg);
       }
       if("ind" in src) {
-        return sprintf("%s var %s = this.memory.op(%s_ind_addr, true, 0);", 
+        return sprintf("%s var %s = this.memory.read(%s_ind_addr);", 
             this.input16({reg16: src.ind}, name + "_ind_addr"), name, name);
       }
       throw("Invalid 8-bit src");
     },
     input16: function(src, name) {
       if("imm16" in src) {
-        return sprintf("var %s = this.memory.op16(this.pc + %d, true, 0);", name, src.imm16);
+        return sprintf("var %s = this.memory.read16(this.pc + %d);", name, src.imm16);
       }
       if("reg16" in src) {
         switch(src.reg16) {
@@ -384,17 +330,17 @@ define(['sprintf'], function(sprintf) {
         }
       }
       if("ima16" in src) {
-        return sprintf("var %s = this.memory.op16(this.memory.op16(this.pc + %d, true, 0), true, 0);", name, src.ima16);
+        return sprintf("var %s = this.memory.read16(this.memory.read16(this.pc + %d));", name, src.ima16);
       }
       if("ind16" in src) {
-        return sprintf("%s var %s = this.memory.op16(%s_ind16_addr, true, 0);", 
+        return sprintf("%s var %s = this.memory.read16(%s_ind16_addr);", 
             this.input16({reg16: src.ind16}, name + "_ind16_addr"), name, name);
       }
       throw("Invalid 16-bit src");
     },
     output8: function(dest, name) {
       if("ima" in dest) {
-        return sprintf("this.memory.op(this.memory.op16(this.pc + %d, true, 0), false, %s);", dest.ima, name);
+        return sprintf("this.memory.write(this.memory.read16(this.pc + %d), %s);", dest.ima, name);
       }
       if("reg" in dest) {
         if(dest.reg == "f") {
@@ -403,7 +349,7 @@ define(['sprintf'], function(sprintf) {
         return sprintf("this.%s = %s;", dest.reg, name);
       }
       if("ind" in dest) {
-        return sprintf("%s this.memory.op(%s_ind_addr, false, %s);", 
+        return sprintf("%s this.memory.write(%s_ind_addr, %s);", 
             this.input16({reg16: dest.ind}, name + "_ind_addr"), name, name);
       }
       throw("Invalid 8-bit dest");
@@ -421,10 +367,10 @@ define(['sprintf'], function(sprintf) {
         return sprintf("this.%s = %s;", dest.reg16, name);
       }
       if("ima16" in dest) {
-        return sprintf("this.memory.op16(this.memory.op16(this.pc + %d, true, 0), false, %s);", dest.ima16, name);
+        return sprintf("this.memory.write16(this.memory.read16(this.pc + %d), %s);", dest.ima16, name);
       }
       if("ind16" in dest) {
-        return sprintf("%s this.memory.op16(%s_ind16_addr, false, %s);", 
+        return sprintf("%s this.memory.write16(%s_ind16_addr, %s);", 
             this.input16({reg16: dest.ind16}, name + "_ind16_addr"), name, name);
       }
       throw("Invalid 16-bit dest");
@@ -432,8 +378,8 @@ define(['sprintf'], function(sprintf) {
     setFlag: function(flag, cond) {
       return sprintf("this.f%s = (%s) ? 1 : 0;", flag, cond);
     },
-    incPc: function(lengths) {
-      return sprintf("this.pc = (this.pc + %d) & 0xffff;", lengths);
+    incPc: function(length) {
+      return sprintf("this.pc = (this.pc + %d) & 0xffff;", length);
     },
     incClock: function(clocks) {
       return sprintf("this.clock += %d;", clocks);
@@ -452,6 +398,21 @@ define(['sprintf'], function(sprintf) {
     },
     type: function(operand) {
       return Object.keys(operand)[0];
+    },
+    getOperatorName: function(reg) { 
+      if(reg.reg != null) {
+        return reg.reg;
+      }
+      if(reg.reg16 != null) {
+        return reg.reg16;
+      }
+      if(reg.ind != null) {
+        return sprintf("(%s)", reg.ind);
+      }
+      throw("bad operand " + reg);
+    },
+    signExtend: function(n) {
+      return (n & 0x80) ? n - 0x100 : n;
     }
   }
 });

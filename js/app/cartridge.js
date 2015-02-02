@@ -45,7 +45,7 @@ define(function () {
 
   mbcs = [];
 
-  mbcs[0] = { // no MBC
+  mbcs[0] = { // no MBC - direct mapping
     init: function(gbc, romImage, cartType) {
       this.gbc = gbc;
       this.romImage = romImage;

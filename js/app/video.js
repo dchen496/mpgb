@@ -1,10 +1,34 @@
-define(function(){
+define(['./cpu', './event-manager'], function(cpu, evm) {
   "use strict"
   var proto = {
-    init: function(gbc) {
-      this.gbc = gbc;
+    init: function(cpu, evm) {
+      this.cpu = cpu;
+      this.evm = evm;
     },
-
+    lcdcOp: function(read, value) {
+    },
+    statOp: function(read, value) {
+    },
+    scyOp: function(read, value) {
+    },
+    scxOp: function(read, value) {
+    },
+    lyOp: function(read, value) {
+    },
+    lycOp: function(read, value) {
+    },
+    wyOp: function(read, value) {
+    },
+    wxOp: function(read, value) {
+    },
+    bgpOp: function(read, value) {
+    },
+    obp0Op: function(read, value) {
+    },
+    obp1Op: function(read, value) {
+    },
+    dmaOp: function(read, value) {
+    }
   }
 
   return {

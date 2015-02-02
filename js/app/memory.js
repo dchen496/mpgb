@@ -19,13 +19,31 @@ define(function() {
    */
 
   var proto = {
-    init: function(gbc) {
+    _init: function(gbc) {
       this.gbc = gbc;
       this.wram = new Uint8Array(0x8000);
       this.wramBank = 1;
       this.hram = new Uint8Array(0xFF);
     },
-    op: function(addr, read, value) {
+
+    read: function(addr) {
+      return this._op(addr, true, 0);
+    },
+    write: function(addr, value) {
+      this._op(addr, false, value);
+    },
+    read16: function(addr) {
+      var lo = this._op(addr, true, 0);
+      var hi = this._op(addr + 1, true, 0);
+      return (hi << 8) | lo;
+    },
+    write16: function(addr, value) {
+      this._op(addr, false, value & 0xff);
+      this._op(addr + 1, false, value >> 8);
+      return value;
+    },
+
+    _op: function(addr, read, value) {
       value &= 0xFF;
       addr &= 0xFFFF;
       switch(true) {
@@ -36,35 +54,24 @@ define(function() {
         case addr < 0xC000: // cartridge RAM
           return this.gbc.cartridge.ramOp(addr, read, value);
         case addr < 0xE000: // work RAM
-          return this.wramOp(addr, read, value);
+          return this._wramOp(addr, read, value);
         case addr < 0xFE00: // echo region
-          return this.op(addr - 0xE000 + 0xC000, read, value);
+          return this._op(addr - 0xE000 + 0xC000, read, value);
         case addr < 0xFEA0: // sprite OAM
           return this.gbc.video.oamOp(addr - 0xFEA0, read, value);
         case addr < 0xFF00: // nothing
           return 0xFF;
         case addr < 0xFF80: // IO ports
-          return this.ioOp(addr, read, value);
+          return this._ioOp(addr, read, value);
         case addr < 0xFFFF: // high RAM
-          return this.hramOp(addr, read, value);
+          return this._hramOp(addr, read, value);
         case addr == 0xFFFF: // interrupt enable
-          return this.imeOp(read, value);
+          return this._ieOp(read, value);
         default: // invalid address
           return 0xFF;
       }
     },
-    op16: function(addr, read, value) {
-      if(read) {
-        var lo = this.op(addr, true, 0);
-        var hi = this.op(addr + 1, true, 0);
-        return (hi << 8) | lo;
-      } else {
-        this.op(addr, false, value & 0xff);
-        this.op(addr + 1, false, value >> 8);
-        return value;
-      }
-    },
-    wramOp: function(addr, read, value) {
+    _wramOp: function(addr, read, value) {
       var off = addr - 0xC000;
       if(off >= 0x1000) {
         off = 0x1000 * this.wramBank + off - 0x1000;
@@ -74,45 +81,61 @@ define(function() {
       }
       return this.wram[off] = value;
     },
-    hramOp: function(addr, read, value) {
+    _hramOp: function(addr, read, value) {
       var off = addr - 0xFF80;
       if(read) {
         return this.hram[off];
       }
       return this.hram[off] = value;
     },
-    ioOp: function(addr, read, value) {
+    _ioOp: function(addr, read, value) {
       addr &= 0xFF;
       switch(addr) {
         case 0x40: // LCDC
+          this.gbc.video.lcdcOp(read, value);
 
         case 0x41: // STAT
+          this.gbc.video.statOp(read, value);
 
         case 0x42: // SCY
+          this.gbc.video.scyOp(read, value);
         case 0x43: // SCX
+          this.gbc.video.scxOp(read, value);
         case 0x44: // LY
+          this.gbc.video.lyOp(read, value);
         case 0x45: // LYC
+          this.gbc.video.lycOp(read, value);
         case 0x4A: // WY
+          this.gbc.video.wyOp(read, value);
         case 0x4B: // WX
+          this.gbc.video.wxOp(read, value);
 
         case 0x47: // BGP
+          this.gbc.video.bgpOp(read, value);
         case 0x48: // OBP0
+          this.gbc.video.obp0Op(read, value);
         case 0x49: // OBP1
+          this.gbc.video.obp1Op(read, value);
 
+        /* GBC only
         case 0x68: // BCPS/BGPI
         case 0x69: // BCPD/BGPD
         case 0x6A: // OCPS/OBPI
         case 0x6B: // OCPD/OBPD
 
         case 0x4F: // VBK
+        */
 
         case 0x46: // DMA
+          this.gbc.video.dmaOp(read, value);
 
+        /* GBC only
         case 0x51: // HDMA1
         case 0x52: // HDMA2
         case 0x53: // HDMA3
         case 0x54: // HDMA4
         case 0x55: // HDMA5
+        */
 
         case 0x10: // NR10
         case 0x11: // NR11
@@ -176,7 +199,7 @@ define(function() {
           }
       }
     },
-    ieOp: function(read, value) {
+    _ieOp: function(read, value) {
       return this.cpu.ienableOp(read, value);
     },
   }
@@ -184,8 +207,8 @@ define(function() {
   return {
     create: function(gbc) {
       var mem = Object.create(proto);
-      mem.init(gbc);
+      mem._init(gbc);
       return mem;
     }
   }
-})
+});

@@ -1,23 +1,31 @@
-define(function(require) {
+(function() {
   "use strict"
-  var cpuIsa = require('./cpu-isa');
-  var modules = [];
-  modules.push(['cpu-isa', cpuIsa]);
+  var names = ['cpu-isa'];
+  var paths = names.map(function(s) { return './' + s });
 
-  return function() {
-    var success = true;
-    var exp = null;
-    for(var i = 0; i < modules.length; i++) {
-      var res = modules[i][1].test();
-      if(!res) {
-        console.log(modules[i][0], "failed");
+  define(paths, function() {
+    var modules = arguments; 
+    return function() {
+      var success = true;
+      var exp = null;
+      var msg = "";
+      for(var i = 0; i < modules.length; i++) {
+        var res = modules[i].test();
+        msg = msg + names[i];
+        if(res) {
+          msg = msg + " PASS";
+        } else {
+          msg = msg + " FAIL";
+        }
+        msg = msg + "<br />";
+        success = success && res;
       }
-      success = success && res;
+      if(success)
+        msg = "<h1>PASS</h1>" + msg;
+      else
+        msg = "<h1>FAIL</h1>" + msg;
+      document.write(msg);
+      return success;
     }
-    if(!success) {
-      return "FAIL";
-    } else {
-      return "PASS";
-    }
-  }
-});
+  });
+})();
