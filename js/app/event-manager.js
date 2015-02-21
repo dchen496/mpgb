@@ -3,9 +3,12 @@ define(function() {
 
   var CLOCK_MAX = (1 << 53);
 
-  // statically allocate event table
+  // statically allocated event table
+  // events with lower numbers are executed first
   var events = {
-    TIMER_OVERFLOW: 0
+    TIMER_OVERFLOW: 0,
+    VIDEO_LINE: 1,
+    VIDEO_HBLANK: 2
   };
 
   var proto = {
@@ -29,11 +32,11 @@ define(function() {
     nextClock: function() {
       if(this.nextValid) 
         return this.nextClockCache;
-      var clock = CLOCK_MAX;
+      var bestClock = CLOCK_MAX;
       var ev = -1;
       for(var i = 0; i < events.length; i++) {
         var c = this.clocks[i];
-        if(c > this.clock && c < clock) {
+        if(c >= this.clock && c < bestClock) {
           ev = i;
           clock = c;
         }
@@ -44,7 +47,7 @@ define(function() {
       return clock;
     },
     register: function(ev, clock, callback) {
-      if(clock < 0) {
+      if(clock < 0 || clock < this.clock) {
         clock = CLOCK_MAX;
       }
       this.nextValid = false;
@@ -52,7 +55,7 @@ define(function() {
       this.callbacks[ev] = callback;
     },
     unregister: function(ev) {
-      this.nextCacheValid = false;
+      this.nextValid = false;
       this.clocks[ev] = CLOCK_MAX;
     },
     advance: function(clock) {
