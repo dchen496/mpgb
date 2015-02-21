@@ -50,7 +50,7 @@ define(function() {
         case addr < 0x8000: // cartridge ROM
           return this.gbc.cartridge.romOp(addr, read, value);
         case addr < 0xA000: // video RAM
-          return this.gbc.video.ramOp(addr, read, value);
+          return this.gbc.video.vramOp(addr, read, value);
         case addr < 0xC000: // cartridge RAM
           return this.gbc.cartridge.ramOp(addr, read, value);
         case addr < 0xE000: // work RAM
@@ -58,7 +58,7 @@ define(function() {
         case addr < 0xFE00: // echo region
           return this._op(addr - 0xE000 + 0xC000, read, value);
         case addr < 0xFEA0: // sprite OAM
-          return this.gbc.video.oamOp(addr - 0xFEA0, read, value);
+          return this.gbc.video.oamOp(addr, read, value);
         case addr < 0xFF00: // nothing
           return 0xFF;
         case addr < 0xFF80: // IO ports
@@ -93,104 +93,160 @@ define(function() {
       switch(addr) {
         case 0x40: // LCDC
           this.gbc.video.lcdcOp(read, value);
-
+          break;
         case 0x41: // STAT
           this.gbc.video.statOp(read, value);
-
+          break;
         case 0x42: // SCY
           this.gbc.video.scyOp(read, value);
+          break;
         case 0x43: // SCX
           this.gbc.video.scxOp(read, value);
+          break;
         case 0x44: // LY
           this.gbc.video.lyOp(read, value);
+          break;
         case 0x45: // LYC
           this.gbc.video.lycOp(read, value);
+          break;
         case 0x4A: // WY
           this.gbc.video.wyOp(read, value);
+          break;
         case 0x4B: // WX
           this.gbc.video.wxOp(read, value);
-
+          break;
         case 0x47: // BGP
           this.gbc.video.bgpOp(read, value);
+          break;
         case 0x48: // OBP0
           this.gbc.video.obp0Op(read, value);
+          break;
         case 0x49: // OBP1
           this.gbc.video.obp1Op(read, value);
-
+          break;
         /* GBC only
         case 0x68: // BCPS/BGPI
+          break;
         case 0x69: // BCPD/BGPD
+          break;
         case 0x6A: // OCPS/OBPI
+          break;
         case 0x6B: // OCPD/OBPD
+          break;
 
         case 0x4F: // VBK
+          break;
         */
-
         case 0x46: // DMA
           this.gbc.video.dmaOp(read, value);
+          break;
 
         /* GBC only
         case 0x51: // HDMA1
+          break;
         case 0x52: // HDMA2
+          break;
         case 0x53: // HDMA3
+          break;
         case 0x54: // HDMA4
+          break;
         case 0x55: // HDMA5
+          break;
         */
 
         case 0x10: // NR10
+          break;
         case 0x11: // NR11
+          break;
         case 0x12: // NR12
+          break;
         case 0x13: // NR13
+          break;
         case 0x14: // NR14
+          break;
 
         case 0x16: // NR21
+          break;
         case 0x17: // NR22
+          break;
         case 0x18: // NR23
+          break;
         case 0x19: // NR24
+          break;
 
         case 0x1A: // NR30
+          break;
         case 0x1B: // NR31
+          break;
         case 0x1C: // NR32
+          break;
         case 0x1D: // NR33
+          break;
         case 0x1E: // NR34
+          break;
 
         case 0x20: // NR41
+          break;
         case 0x21: // NR42
+          break;
         case 0x22: // NR43
+          break;
         case 0x23: // NR44
+          break;
 
         case 0x24: // NR50
+          break;
         case 0x25: // NR51
+          break;
         case 0x26: // NR52
+          break;
 
         case 0x00: // P1/JOYP
+          break;
           
         case 0x01: // SB
+          break;
         case 0x02: // SC
+          break;
 
         case 0x04: // DIV
           return this.gbc.timer.divOp(read, value);
+          break;
         case 0x05: // TIMA
           return this.gbc.timer.timaOp(read, value);
+          break;
         case 0x06: // TMA
           return this.gbc.timer.tmaOp(read, value);
+          break;
         case 0x07: // TAC
           return this.gbc.timer.tacOp(read, value);
+          break;
 
         case 0x0F: // IF
           return this.cpu.iflagOp(read, value);
+          break;
 
         case 0x4D: // KEY1
+          break;
         case 0x56: // RP
+          break;
         case 0x70: // SVBK
+          break;
 
         case 0x6C: // undocumented
+          break;
         case 0x72:
+          break;
         case 0x73:
+          break;
         case 0x74:
+          break;
         case 0x75:
+          break;
         case 0x76:
+          break;
         case 0x77:
+          break;
 
         default:
           if(0x30 <= addr && addr <= 0x3F) {
