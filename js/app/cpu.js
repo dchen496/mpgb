@@ -10,11 +10,11 @@ define['./cpu-isa', function(isa) {
   };
 
   var states = {
-    NORMAL,
-    IRQ,
-    HALTED,
-    STOPPED
-//    HDMA for GBC
+    NORMAL: 0,
+    IRQ: 1,
+    HALTED: 2,
+    STOPPED: 3
+//    HDMA: 4 for GBC
   };
 
   var proto = {
@@ -43,7 +43,6 @@ define['./cpu-isa', function(isa) {
       this.ime = 0;
       this.iflags = 0;
       this.ienables = 0;
-      this.ivectors = [0x0040, 0x0048, 0x0050, 0x0058, 0x0060];
 
       this.ops = isa.generateOps();
       this.cbops = isa.generateCBOps();
@@ -61,7 +60,6 @@ define['./cpu-isa', function(isa) {
           break;
         case states.IRQ:
           this.handleIrq();
-          this.state = NORMAL;
           break;
         case states.HALTED:
           this.clock = evm.nextClock();
@@ -89,9 +87,12 @@ define['./cpu-isa', function(isa) {
           // push pc onto stack
           this.sp = (this.sp + 0xfffe) & 0xffff;
           this.memory.write16(this.sp, this.pc);
-          this.pc = this.ivectors[i];
-          // estimated 16-cycle interrupt latency
+          // jump to handler
+          this.pc = 0x0040 + i * 8;
+          // 16-cycle interrupt latency (estimated)
           this.clock += 16;
+          this.state = NORMAL;
+          return;
         }
       }
     },
@@ -125,13 +126,16 @@ define['./cpu-isa', function(isa) {
       this.checkPendingIrq();
     },
     checkPendingIrq: function() {
-      this.state = this.ime && (this.iflags & this.ienables);
+      var irqs = this.iflags & this.ienables;
+      if((this.ime || this.state == states.HALTED) && irqs) {
+        this.state = states.IRQ;
+      }
     },
     stop: function() {
-      this.state = STOPPED;
+      this.state = states.STOPPED;
     },
     halt: function() {
-      this.state = HALTED;
+      this.state = states.HALTED;
     },
     getF: function(value) {
       return (this.fz << 7) | (this.fn << 6) | (this.fh << 5) | (this.fc << 4);

@@ -301,7 +301,8 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       op: "this.halt();" + h.incPc(1) + h.incClock(0)
     },
     "stop": {
-      op: "this.stop();" + h.incPc(2) + h.incClock(0), // 2 because opcode is 0x10 0x00?
+      op: "this.stop();" + h.incPc(2) + h.incClock(0), 
+      // 2 because opcode is 0x10 0x00?
       len: 2
     },
     "di": {
