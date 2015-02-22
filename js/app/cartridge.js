@@ -1,4 +1,4 @@
-define(function () {
+define(['sprintf'], function(sprintf) {
   "use strict"
   function computeRomType(cartType) {
     // cart type, mbc type, ram, battery, rtc
@@ -43,7 +43,7 @@ define(function () {
     throw("unsupported cartridge type");
   }
 
-  mbcs = [];
+  var mbcs = [];
 
   mbcs[0] = { // no MBC - direct mapping
     init: function(gbc, romImage, cartType) {
@@ -52,31 +52,87 @@ define(function () {
       this.ramImage = new Uint8Array(0x2000);
     },
     romOp: function(addr, read, value) {
-      return romImage[addr];
+      return this.romImage[addr];
     },
     ramOp: function(addr, read, value) {
       addr -= 0xA000;
       if(read) {
-        return ramImage[addr];
+        return this.ramImage[addr];
       }
-      return ramImage[addr] = value;
+      return this.ramImage[addr] = value;
     },
     persist: function() {
+      throw("MBC0 persist unimplemented");
+    },
+    dump: function() {
+      return sprintf("MBC0");
     }
   }
 
   mbcs[1] = { // MBC1
     init: function(gbc, romImage, cartType) {
-      throw("MBC1 unimplemented");
       this.gbc = gbc;
       this.romImage = romImage;
+      this.ramImage = new Uint8Array(0x8000);
+      this.ramEnable = 0;
+      this.lowerBank = 0x01;
+      this.upperBank = 0x00;
+      this.mode = 0;
     },
     romOp: function(addr, read, value) {
-      
+      if(read) {
+        var bankSize = 0x4000;
+        if(addr >= bankSize) {
+          if(this.mode) {
+            addr += this.lowerBank * bankSize;
+          } else {
+            addr += (this.upperBank << 5 + this.lowerBank) * bankSize;
+          }
+        }
+        return this.romImage[addr];
+      }
+      switch(true) {
+      case addr < 0x2000:
+        this.ramEnable = (value & 0x0f) == 0x0a ? 1 : 0;
+        break;
+      case addr < 0x4000:
+        value &= 0x1f;
+        this.lowerBank = value ? value : 1;
+        break;
+      case addr < 0x6000:
+        this.upperBank = value & 0x03;
+        break;
+      case addr < 0x8000:
+        // TODO do non-0, 1 values really do this?
+        this.mode = value & 0x01;
+        break;
+      }
     },
-    ramOp: function(add, read, value) {
+    ramOp: function(addr, read, value) {
+      if(!this.ramEnable) {
+        return 0xff;
+      }
+      addr -= 0xa000;
+      if(this.mode) {
+        addr += this.upperBank * 0x2000;
+      }
+      
+      if(read) {
+        return this.ramImage[addr];
+      }
+      return this.ramImage[addr] = value;
     },
     persist: function() {
+      throw("MBC1 persist unimplemented");
+    },
+    dump: function() {
+      if(this.mode) {
+        return sprintf("MBC1 mode: 1 romBank: %d ramBank: %d ramEnable: %d", 
+            this.lowerBank, this.upperBank, this.ramEnable);
+      } else {
+        return sprintf("MBC1 mode: 0 romBank: %d ramBank: 0 ramEnable: %d",
+            this.lowerBank + 32 * this.upperBank, this.ramEnable);
+      }
     }
   }
 
@@ -92,6 +148,9 @@ define(function () {
     ramOp: function(add, read, value) {
     },
     persist: function() {
+    },
+    dump: function() {
+      return sprintf("MBC2");
     }
   }
 
@@ -107,6 +166,9 @@ define(function () {
     ramOp: function(add, read, value) {
     },
     persist: function() {
+    },
+    dump: function() {
+      return sprintf("MBC3");
     }
   }
 
@@ -122,6 +184,9 @@ define(function () {
     ramOp: function(add, read, value) {
     },
     persist: function() {
+    },
+    dump: function() {
+      return sprintf("MBC4");
     }
   }
 
@@ -137,8 +202,11 @@ define(function () {
     ramOp: function(add, read, value) {
     },
     persist: function() {
+    },
+    dump: function() {
+      return sprintf("MBC5");
     }
-  }
+  };
 
   return {
     create: function(gbc, romImage) {
@@ -147,5 +215,5 @@ define(function () {
       cart.init(gbc, romImage, cartType);
       return cart;
     }
-  }
+  };
 });

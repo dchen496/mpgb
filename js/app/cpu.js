@@ -1,4 +1,4 @@
-define['./cpu-isa', function(isa) {
+define(['./cpu-isa', 'sprintf'], function(isa, sprintf) {
   "use strict"
 
   var irqvectors = {
@@ -55,7 +55,7 @@ define['./cpu-isa', function(isa) {
         case states.NORMAL:
           while(this.clock < evm.nextClock() && this.state == states.NORMAL) {
             var opcode = this.memory.read(this.pc);
-            this.ops[opcode]();
+            this.ops[opcode].call(this);
           }
           break;
         case states.IRQ:
@@ -76,6 +76,7 @@ define['./cpu-isa', function(isa) {
       return this.clock;
     },
     handleIrq: function() {
+      this.state = states.NORMAL;
       var irqs = this.ienables & this.iflags;
       this.processIrqs = false;
       if(!this.ime || !irqs)
@@ -91,7 +92,6 @@ define['./cpu-isa', function(isa) {
           this.pc = 0x0040 + i * 8;
           // 16-cycle interrupt latency (estimated)
           this.clock += 16;
-          this.state = NORMAL;
           return;
         }
       }
@@ -145,8 +145,45 @@ define['./cpu-isa', function(isa) {
       this.fn = (value >> 6) & 1; 
       this.fh = (value >> 5) & 1; 
       this.fc = (value >> 4) & 1;
+    },
+    daa: function() {
+      var high = this.a >> 4;
+      var low = this.a & 0xf;
+      var a = this.a;
+      if(!this.fn) {
+        if(this.fh || low > 9) {
+          a += 0x06;
+        }
+        if(this.fc || a > 0x9f) {
+          a += 0x60;
+        }
+      } else {
+        if(this.fh) {
+          a = (a - 6) & 0xff;
+        }
+        if(this.fc) {
+          a -= 0x60;
+        }
+      }
+      this.fh = 0;
+      this.fz = 0;
+      a &= 0x1ff;
+      if((a & 0x100) == 0x100) {
+        this.fc = 1;
+      }
+      a &= 0xff;
+      if(a == 0) {
+        this.fz = 1;
+      }
+      this.a = a;
+    },
+    dump: function() {
+      return sprintf("bc: %02x%02x de: %02x%02x af: %02x%02x hl: %02x%02x sp: %04x\n",
+            this.b, this.c, this.d, this.e, this.a, this.getF(), this.h, this.l, this.sp) +
+          sprintf("pc: %04x fz: %d fn: %d fh: %d fc: %d ime: %d if: %02x ie: %02x clock: %d",
+            this.pc, this.fz, this.fn, this.fh, this.fc, this.ime, this.iflags, this.ienables, this.clock);
     }
-  }
+  };
 
   return {
     create: function(memory) {
@@ -155,5 +192,6 @@ define['./cpu-isa', function(isa) {
       return cpu;
     },
     irqvectors: irqvectors
-  }
+  };
+
 });

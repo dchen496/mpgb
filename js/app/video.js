@@ -1,4 +1,4 @@
-define(['./cpu', './event-manager'], function(cpu, evm) {
+define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
   "use strict"
   
   var MODE2_CLOCKS = 80;
@@ -15,10 +15,10 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
     HBLANK: 0,
     VBLANK: 1,
     OAM: 2,
-    COINCIDENCE, 3
+    COINCIDENCE: 3,
   };
 
-  var colormap = [255, 170, 85, 0];
+  var colormap = [200, 150, 50, 0];
 
   var proto = {
     init: function(memory, cpu, evm, frameCallback) {
@@ -105,7 +105,7 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
         }
       }
       return mode;
-    }
+    },
     statOp: function(read, value) {
       if(read) {
         var coincidence = this.lyc == this.ly ? 1 : 0;
@@ -202,9 +202,9 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
     updateEvents: function() {
       if(this.enable) {
         this.evm.register(evm.events.VIDEO_LINE, this.lineStart +
-            LINE_CLOCKS, lineCallback);
+            LINE_CLOCKS, this, this.lineCallback);
         this.evm.register(evm.events.VIDEO_HBLANK, this.lineStart +
-            MODE2_CLOCKS + MODE3_CLOCKS, hblankCallback);
+            MODE2_CLOCKS + MODE3_CLOCKS, this, this.hblankCallback);
       } else {
         this.evm.unregister(evm.events.VIDEO_LINE);
         this.evm.unregister(evm.events.VIDEO_HBLANK);
@@ -213,8 +213,8 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
     lineCallback: function() {
       if(this.ly < ACTIVE_LINES) {
         this.preprocessOAM();
-        var buf = this.drawLine(this.ly, sprites);
-        this.writeLineToFb(buf);
+        var buf = this.drawLine(this.ly);
+        this.writeLineToFb(this.ly, buf);
       }
       this.ly++;
       if(this.ly >= TOTAL_LINES) {
@@ -247,7 +247,7 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       }
     },
 
-    drawLine: function(line, sprites) {
+    drawLine: function(line) {
       // initialize to white
       var buf = new Uint8Array(LINE_WIDTH);
 
@@ -261,6 +261,9 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       // TODO investigate bg-sprite priority in
       // sprite < bg conflicting with sprite > bg case
       var zbuf = new Uint8Array(LINE_WIDTH);
+      for(var i = 0; i < zbuf.length; i++) {
+        zbuf[i] = 0xff;
+      }
 
       this.drawBackgroundLine(line, buf, zbuf);
       this.drawWindowLine(line, buf, zbuf);
@@ -269,7 +272,7 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       return buf;
     },
 
-    writeLineToFb: function(buf) {
+    writeLineToFb: function(line, buf) {
       var base = LINE_WIDTH * line;
       for(var i = 0; i < LINE_WIDTH; i++) {
         this.fb[base + i] = colormap[buf[i]];
@@ -285,7 +288,7 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       var y = (line + this.scy) & 0xff;
       for(var i = 0; i < LINE_WIDTH; i++) {
         var x = (i + this.scx) & 0xff;
-        var color = getBackgroundPixel(x, y, mapBase);
+        var color = this.getBackgroundPixel(mapBase, x, y);
         var z = color ? 11 : 23;
         if(z <= zbuf[i]) {
           zbuf[i] = z;
@@ -310,11 +313,11 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
 
       var mapBase = this.windowTileMapSelect ? 0x1C00 : 0x1800;
       for(var i = x; i < LINE_WIDTH; i++) {
-        var color = getBackgroundPixel(mapBase, x, y);
+        var color = this.getBackgroundPixel(mapBase, x, y);
         var z = color ? 10 : 22;
         if(z <= zbuf[i]) {
           zbuf[i] = z;
-          buf[i] = (this.bgp >> (1 << color)) & 3;
+          buf[i] = (this.bgp >> (color << 1)) & 3;
         }
       }
     },
@@ -327,7 +330,6 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       if(!this.tileDataSelect && tileIndex < 0x80) {
         tileIndex += 0x100;
       }
-
       // TODO cache tile pixel data
       return this.getPixel(tileIndex, x & 7, y & 7);
     },
@@ -337,7 +339,7 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
         return;
       }
 
-      var sprites = this.getLineSprites(this.ly);
+      var sprites = this.getLineSprites(line);
       var height = this.spriteSize ? 16 : 8;
 
       for(var i = 0; i < sprites.length; i++) {
@@ -356,7 +358,7 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
           // color 0 is transparent
           if(color != 0 && z <= zbuf[i]) {
             zbuf[i] = z;
-            buf[i] = (palette >> (1 << color)) & 3;
+            buf[i] = (palette >> (color << 1)) & 3;
           }
         }
       }
@@ -422,6 +424,29 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
         return sprites.slice(0, 10);
       }
       return sprites;
+    },
+
+    dump: function() {
+      return sprintf("bgen: %d spen: %d spsz: %d bgts: %d tdat: %d wien: %d wits: %d en: %d ien: %02x\n",
+            this.bgDisplay, this.spriteEnable, this.spriteSize, this.bgTileMapSelect, 
+            this.tileDataSelect, this.windowEnable, this.windowTileMapSelect, this.enable, this.ienables) +
+          sprintf("scy: %02x scx: %02x ly: %02x lyc: %02x wy: %02x wx: %02x bgp: %02x obp0: %02x obp1: %02x",
+            this.scy, this.scx, this.ly, this.lyc, this.wy, this.wx, this.bgp, this.obp0, this.obp1);
+    },
+
+    dumpTiles: function() {
+      var tiles = new Array(384);
+      for(var i = 0; i < tiles.length; i++) {
+        var tile = new Array(64);
+        for(var y = 0; y < 8; y++) {
+          for(var x = 0; x < 8; x++) {
+            var color = this.getPixel(i, x, y);
+            tile[y * 8 + x] = colormap[color];
+          }
+        }
+        tiles[i] = tile;
+      }
+      return tiles;
     }
   }
 

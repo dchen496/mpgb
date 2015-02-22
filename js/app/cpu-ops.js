@@ -10,8 +10,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         var clocks = 4;
         if(h.type(r1) == "ind" || h.type(r2) == "ind")
           clocks = 8;
-        return h.ld(r1, r2) +
-          h.incClock(clocks);
+        return h.ld(r1, r2) + h.incClock(clocks);
       },
       ds: function(mem, pc, r1, r2) {
         return sprintf("ld %s,%s", gon(r1), gon(r2));
@@ -56,7 +55,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     "ld (ff00+n),a": {
       op: h.input8({imm: 1}, "offset") +
         "var addr = (0xff00 + offset) & 0xffff;" +
-        "this.write(addr, this.a);" +
+        "this.memory.write(addr, this.a);" +
         h.incPc(2) + h.incClock(12),
       ds: function(mem, pc) {
         return sprintf("ld (ff00+#%02x),a", mem.read(pc+1));
@@ -184,17 +183,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       }
     },
     "daa": {
-      op: "var diff = 0;" +
-        "if(this.a > 0x99 || this.fc) diff |= 0x60;" +
-        "if((this.a & 0x0f) > 0x09 || this.fh) diff |= 0x06;" +
-        "this.fh = (this.a >> 4) & 1;" +
-        "if(this.fn) this.a = (this.a + 0xff - diff) & 0xff;" +
-        "else this.a = (this.a + diff) & 0xff;" +
-        "this.fh = (this.fh ^ (this.a >> 4)) & 1;" +
-        "this.fc = diff >> 6;" +
-        h.setFlag("z", "this.a == 0") +
-        h.incPc(1) + 
-        h.incClock(4)
+      op: "this.daa();" + h.incPc(1) + h.incClock(4)
     },
     "cpl": {
       op: h.input8({reg: "a"}, "tmp") +
@@ -271,10 +260,9 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       op: h.rr({reg: "a"}) + "this.fz = 0;" + h.incPc(1) + h.incClock(4)
     },
     "cb prefix": {
-      op: h.incPc(1) +
-        h.incClock(0) +
-        "var op = this.memory.read(this.pc);" +
-        "this.cbops[op]();",
+      op: h.incPc(0) + h.incClock(0) +
+        "var op = this.memory.read(this.pc+1);" +
+        "this.cbops[op].call(this);",
       ds: function(mem, pc) {
         return this.disasmCB(mem, pc);
       },
@@ -339,7 +327,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       op: h.jr({imm: 1}) + h.incClock(12),
       ds: function(mem, pc) {
         var d = h.signExtend(mem.read(pc+1));
-        var target = (pc + d + 0x10000) & 0xffff;
+        var target = (pc + d + 2 + 0x10000) & 0xffff;
         return sprintf("jr #%+02x=%04x", d, target);
       },
       len: 2
@@ -353,7 +341,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       },
       ds: function(mem, pc, cc) {
         var d = h.signExtend(mem.read(pc+1));
-        var target = (pc + d + 0x10000) & 0xffff;
+        var target = (pc + d + 2 + 0x10000) & 0xffff;
         return sprintf("jr %s,#%+02x=%04x", cc, d, target);
       },
       len: 2
@@ -426,8 +414,8 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         h.setFlag("z", sprintf("(tmp >> %d) & 0x01 == 0", bit)) +
         "this.fn = 0;" +
         "this.fh = 1;" +
-        h.incPc(1) +
-        h.incClockOperand({reg: 8, ind: 12});
+        h.incPc(2) +
+        h.incClockOperand(r, {reg: 8, ind: 12});
       },
       ds: function(mem, pc, bit, r) {
         return sprintf("bit %d,%s", bit, gon(r));
@@ -438,8 +426,8 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.input8(r, "tmp") +
           sprintf("tmp &= ~(1 << %d);", bit) +
           h.output8(r, "tmp") +
-          h.incPc(1) +
-          h.incClockOperand({reg: 8, ind: 16});
+          h.incPc(2) +
+          h.incClockOperand(r, {reg: 8, ind: 16});
       },
       ds: function(mem, pc, bit, r) {
         return sprintf("res %d,%s", bit, gon(r));
@@ -450,8 +438,8 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.input8(r, "tmp") +
           sprintf("tmp |= 1 << %d;", bit) +
           h.output8(r, "tmp") +
-          h.incPc(1) +
-          h.incClockOperand({reg: 8, ind: 16});
+          h.incPc(2) +
+          h.incClockOperand(r, {reg: 8, ind: 16});
       },
       ds: function(mem, pc, bit, r) {
         return sprintf("set %d,%s", bit, gon(r));

@@ -17,6 +17,29 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
       return res;
     },
 
+    disasmRangePretty: function(start, end, highlight) {
+      var dis = this.disasmRange(start, end);
+      var lines = [];
+      for(var i = 0; i < dis.length; i++) {
+        var cols = new Array(3);
+        var ins = dis[i];
+        for(var j = 0; j < ins.len; j++) {
+          cols[0] = sprintf("%04x:", (ins.addr+j) & 0xffff);
+          cols[1] = sprintf("%02x", this.mem.read(ins.addr+j));
+          cols[2] = '';
+          if(j == 0) {
+            cols[2] = ins.ds;
+          }
+          if((ins.addr+j - highlight) & 0xffff) {
+            lines.push(" " + cols.join(' '));
+          } else {
+            lines.push("*" + cols.join(' '));
+          }
+        }
+      }
+      return lines.join('\n');
+    },
+
     disasm: function(pc) {
       var opcode = this.mem.read(pc);
       var instruction = decoder.getInstruction(opcode);

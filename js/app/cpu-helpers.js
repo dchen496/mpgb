@@ -36,6 +36,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     jr: function(operand) {
       return this.input8(operand, "offset") +
         "offset = (offset & 0x80) ? (offset | 0xff00) : offset;" + // sign extension
+        this.incPcOperand([operand]) +
         "this.pc = (this.pc + offset) & 0xffff;";
     },
     call: function(operand) {
@@ -199,13 +200,10 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     // rotation/shift operations
     rotOp: function(operator, operand) {
       var rots = ["rlc", "rrc", "rl", "rr", "sla", "sra", "swap", "srl"];
-      if(rots.indexOf(operator) < 0) {
-        throw("bad rotation op " + operator);
-      }
       // flag behavior of rlc a and rlca (and similar) are different
-      return this[operator](operand) + 
+      return this[rots[operator]](operand) + 
         this.setFlag("z", "tmp == 0") +
-        this.incPc(1) +
+        this.incPc(2) +
         this.incClockOperand(operand, this.rotClocks);
     },
     rlc: function(operand) {
@@ -260,7 +258,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     },
     swap: function(operand) {
       return this.input8(operand, "tmp") +
-        "tmp = (tmp >> 4) | ((tmp & 0x0f) << 4)" +
+        "tmp = (tmp >> 4) | ((tmp & 0x0f) << 4);" +
         this.output8(operand, "tmp") +
         "this.fc = 0;" +
         "this.fh = 0;" +
@@ -413,6 +411,9 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     },
     signExtend: function(n) {
       return (n & 0x80) ? n - 0x100 : n;
+    },
+    dump: function(str) {
+      return sprintf("console.log(\"%s\", this.dump());", str);
     }
   }
 });

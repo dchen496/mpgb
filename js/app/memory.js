@@ -1,5 +1,7 @@
-define(function() {
+define(['sprintf', './event-manager'], function(sprintf, evm) {
   "use strict"
+
+  var debugSerial = false;
 
   /*
    * Memory Map
@@ -92,38 +94,27 @@ define(function() {
       addr &= 0xFF;
       switch(addr) {
         case 0x40: // LCDC
-          this.gbc.video.lcdcOp(read, value);
-          break;
+          return this.gbc.video.lcdcOp(read, value);
         case 0x41: // STAT
-          this.gbc.video.statOp(read, value);
-          break;
+          return this.gbc.video.statOp(read, value);
         case 0x42: // SCY
-          this.gbc.video.scyOp(read, value);
-          break;
+          return this.gbc.video.scyOp(read, value);
         case 0x43: // SCX
-          this.gbc.video.scxOp(read, value);
-          break;
+          return this.gbc.video.scxOp(read, value);
         case 0x44: // LY
-          this.gbc.video.lyOp(read, value);
-          break;
+          return this.gbc.video.lyOp(read, value);
         case 0x45: // LYC
-          this.gbc.video.lycOp(read, value);
-          break;
+          return this.gbc.video.lycOp(read, value);
         case 0x4A: // WY
-          this.gbc.video.wyOp(read, value);
-          break;
+          return this.gbc.video.wyOp(read, value);
         case 0x4B: // WX
-          this.gbc.video.wxOp(read, value);
-          break;
+          return this.gbc.video.wxOp(read, value);
         case 0x47: // BGP
-          this.gbc.video.bgpOp(read, value);
-          break;
+          return this.gbc.video.bgpOp(read, value);
         case 0x48: // OBP0
-          this.gbc.video.obp0Op(read, value);
-          break;
+          return this.gbc.video.obp0Op(read, value);
         case 0x49: // OBP1
-          this.gbc.video.obp1Op(read, value);
-          break;
+          return this.gbc.video.obp1Op(read, value);
         /* GBC only
         case 0x68: // BCPS/BGPI
           break;
@@ -138,8 +129,7 @@ define(function() {
           break;
         */
         case 0x46: // DMA
-          this.gbc.video.dmaOp(read, value);
-          break;
+          return this.gbc.video.dmaOp(read, value);
 
         /* GBC only
         case 0x51: // HDMA1
@@ -205,26 +195,28 @@ define(function() {
           break;
           
         case 0x01: // SB
+          if(debugSerial) {
+            console.log('sb', read, String.fromCharCode(value), 'pc');
+            this.gbc.evm.update(evm.events.BREAKPOINT, this.gbc.cpu.clock);
+          }
           break;
         case 0x02: // SC
+          if(debugSerial) {
+            console.log('sc', read, value);
+          }
           break;
 
         case 0x04: // DIV
           return this.gbc.timer.divOp(read, value);
-          break;
         case 0x05: // TIMA
           return this.gbc.timer.timaOp(read, value);
-          break;
         case 0x06: // TMA
           return this.gbc.timer.tmaOp(read, value);
-          break;
         case 0x07: // TAC
           return this.gbc.timer.tacOp(read, value);
-          break;
 
         case 0x0F: // IF
-          return this.cpu.iflagOp(read, value);
-          break;
+          return this.gbc.cpu.iflagOp(read, value);
 
         case 0x4D: // KEY1
           break;
@@ -254,10 +246,28 @@ define(function() {
             ;
           }
       }
+      return 0xff;
     },
     _ieOp: function(read, value) {
-      return this.cpu.ienableOp(read, value);
+      return this.gbc.cpu.ienableOp(read, value);
     },
+    
+    dump: function(min, max, highlight) {
+      var res = [];
+      min = Math.floor(min / 4);
+      max = Math.ceil(max / 4);
+      for(var i = min; i <= max; i++) {
+        var addr = (i*4) & 0xffff;
+        var s = addr == (highlight - highlight % 4) ? '*' : ' ';
+        res.push(sprintf("%s%04x: %04x %04x", 
+              s, addr, this.read16(addr), this.read16(addr+2)));
+      }
+      return res.join("\n");
+    },
+    dumpStack: function(min, max) {
+      return this.dump(this.gbc.cpu.sp + min, this.gbc.cpu.sp + max,
+          this.gbc.cpu.sp);
+    }
   }
 
   return {

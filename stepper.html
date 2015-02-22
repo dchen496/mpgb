@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <title>GB Stepper</title>
+    <script data-main="js/stepper.js" src="js/require.js"></script>
+    <style type="text/css">
+      #lcd {
+        width: 320px;
+        height: 288px;
+      }
+    </style>
+  </head>
+  <body>
+  <div>
+    <canvas id="lcd" width="640" height="576"></canvas>
+  </div>
+  <div>
+    <h4>Advance cycles</h4>
+    <button id="adv0">1e0</button>
+    <button id="adv1">1e1</button>
+    <button id="adv2">1e2</button>
+    <button id="adv3">1e3</button>
+    <button id="adv4">1e4</button>
+    <button id="adv5">1e5</button>
+    <button id="adv6">1e6</button>
+    <button id="adv7">1e7</button>
+    <input type="number" id="advcustom-input"></input>
+    <button id="advcustom">Go</button>
+  </div>
+  <div>
+    <h4>Stats</h4>
+    <pre id="stats">
+    </pre>
+  </div>
+  <div>
+    <h4>CPU</h4>
+    <pre id="cpu">
+    </pre>
+  </div>
+  <div>
+    <div style="float: left; width: 250px">
+      <div>
+        <h4>Disassembly</h4>
+        <pre id="disasm">
+        </pre>
+      </div>
+      <div>
+        <h4>Stack</h4>
+        <pre id="stack">
+        </pre>
+      </div>
+    </div>
+    <div style="float: left; width: 250px">
+      <div>
+        <h4>Memory</h4>
+        <input type="text" id="memaddr"></input>
+        <button id="setmemaddr">Go</button>
+        <pre id="memory">
+        </pre>
+      </div>
+    </div>
+  </div>
+  <div style="clear:both;"></div>
+  <div>
+    <h4>Video</h4>
+    <pre id="video">
+    </pre>
+  </div>
+  <div>
+    <h4>Tiles</h4>
+    <canvas id="tiles" width="512" height="48"></canvas>
+  </div>
+  <div>
+    <h4>Timer</h4>
+    <pre id="timer">
+    </pre>
+  </div>
+  <div>
+    <h4>Events</h4>
+    <pre id="events">
+    </pre>
+  </div>
+  <div>
+    <h4>Cartridge</h4>
+    <pre id="cartridge">
+    </pre>
+  </div>
+  </body>
+</html>

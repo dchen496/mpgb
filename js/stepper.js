@@ -6,6 +6,6 @@ requirejs.config({
 });
 
 // Start the main app logic.
-requirejs(['app/main'], function(main) {
+requirejs(['app/stepper'], function(main) {
   main();
 });

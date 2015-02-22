@@ -1,4 +1,4 @@
-define(['./cpu', './event-manager'], function(cpu, evm) {
+define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
   "use strict"
 
   var shifts = [10, 4, 6, 8];
@@ -60,16 +60,16 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       this.started = (value >> 2) & 0x01;
 
       // use the old value of TIMA as the base
-      this.timaStartValue = this.timaOp(true, 0);
       this.timaStart = this.cpu.clock;
+      this.timaStartValue = this.timaOp(true, 0);
       this.updateOverflowEvent();
       return value;
     },
     updateOverflowEvent: function() {
       if(this.started) {
         var shift = shifts[this.clockSelect];
-        var ov = (0x100 - this.timaStartValue) << shift + this.timaStart;
-        this.evm.register(evm.events.TIMER_OVERFLOW, ov, overflowCallback);
+        var ov = ((0x100 - this.timaStartValue) << shift) + this.timaStart;
+        this.evm.register(evm.events.TIMER_OVERFLOW, ov, this, this.overflowCallback);
       } else {
         this.evm.unregister(evm.events.TIMER_OVERFLOW);
       }
@@ -79,13 +79,18 @@ define(['./cpu', './event-manager'], function(cpu, evm) {
       this.timaStart = clock;
       this.cpu.irq(cpu.irqvectors.TIMER);
       this.updateOverflowEvent();
+    },
+
+    dump: function() {
+      return sprintf("tima: %02x tma: %02x div: %02x started: %d cshift: %d",
+          this.timaOp(1, 0), this.tmaOp(1, 0), this.divOp(1, 0), this.started, shifts[this.clockSelect]);
     }
   };
 
   return {
-    create: function(cpu) {
+    create: function(cpu, evm) {
       var timer = Object.create(proto);
-      timer.init(cpu);
+      timer.init(cpu, evm);
       return timer;
     }
   };

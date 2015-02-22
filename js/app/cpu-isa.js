@@ -21,46 +21,51 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
       for(var i = 0; i < 256; i++) {
         ops[i] = Function(this.generateOpStr(i));
       }
-      return instructions;
+      return ops;
     },
     generateCBOps: function() {
       var ops = Array(256);
       for(var i = 0; i < 256; i++) {
         ops[i] = Function(this.generateCBOpStr(i));
       }
-      return instructions;
+      return ops;
     },
 
     test: function() {
       return this.testGenOpStrs();
     },
     testGenOpStrs: function() {
-      var x = 0;
+      var total = 0;
       var pass = true;
-      for(var i = 0; i < 256; i++) {
-        var func = this.generateOpStr(i);
-        if(func != null) {
-          //console.log(func);
-          if(func.indexOf("this.pc +=") === -1 && func.indexOf("this.pc =") === -1) {
-            console.log("pc undefined for instruction", i, func);
-            pass = false;
+      var classes = ["generateOpStr", "generateCBOpStr"];
+      for(var c = 0; c < classes.length; c++) {
+        var x = 0;
+        for(var i = 0; i < 256; i++) {
+          var func = this[classes[c]](i);
+          if(func != null) {
+            console.log(func);
+            if(func.indexOf("this.pc +=") === -1 && func.indexOf("this.pc =") === -1) {
+              console.log("pc undefined for instruction", i, func);
+              pass = false;
+            }
+            if(func.indexOf("this.clock +=") === -1) {
+              console.log("clock undefined for instruction", i, func);
+              pass = false;
+            }
+            try {
+              Function(func);
+              x++;
+            } catch(e) {
+              console.log("compile error:", i, e, func);
+            }
+          } else {
+            console.log("instruction undefined", i);
           }
-          if(func.indexOf("this.clock +=") === -1) {
-            console.log("clock undefined for instruction", i, func);
-            pass = false;
-          }
-          try {
-            Function(func);
-            x++;
-          } catch(e) {
-            console.log("compile error:", i, e, func);
-          }
-        } else {
-          console.log("instruction undefined", i);
         }
+        console.log(classes[c], x, "of 256 instructions defined", x / 256.0 * 100.0, "%");
+        total += x;
       }
-      console.log(x, "of 256 instructions defined", x / 256.0 * 100.0, "%");
-      return pass && x == 256;
+      return pass && total == 512;
     },
     debugGetFormattedOps: function() {
       var out = [];
