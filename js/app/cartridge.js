@@ -1,4 +1,4 @@
-define(['sprintf'], function(sprintf) {
+define(['sprintf', './event-manager'], function(sprintf, evm) {
   "use strict"
   function computeRomType(cartType) {
     // cart type, mbc type, ram, battery, rtc
@@ -86,11 +86,13 @@ define(['sprintf'], function(sprintf) {
           if(this.mode) {
             addr += this.lowerBank * bankSize;
           } else {
-            addr += (this.upperBank << 5 + this.lowerBank) * bankSize;
+            addr += ((this.upperBank << 5) + this.lowerBank) * bankSize;
           }
         }
         return this.romImage[addr];
       }
+      this.gbc.evm.update(evm.events.BREAKPOINT, this.gbc.clock);
+      console.log(addr, value);
       switch(true) {
       case addr < 0x2000:
         this.ramEnable = (value & 0x0f) == 0x0a ? 1 : 0;
