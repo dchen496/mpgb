@@ -182,9 +182,11 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
       return this.input8(src, "tmp") +
         this.input16({reg16: "sp"}, "sp") + 
         // h and c flags set using unsigned addition (ie. before sign extension)
-        this.setFlag("h", "(sp & 0xfff) + (tmp & 0xfff) > 0xfff") +
-        this.setFlag("c", "sp + tmp > 0xffff") +
-        "tmp = (tmp & 0x80) ? (tmp | 0xff00) : tmp;" + // sign extension
+        //this.setFlag("h", "(sp & 0xfff) + (tmp & 0xfff) > 0xfff") +
+        this.setFlag("h", "(sp & 0xf) + (tmp & 0xf) > 0xf") +
+        //this.setFlag("c", "sp + tmp > 0xffff") +
+        this.setFlag("c", "(sp & 0xff) + tmp > 0xff") +
+        "tmp = (tmp & 0x80) ? (tmp - 0x100) : tmp;" + // sign extension
         "sp = (sp + tmp) & 0xffff;" +
         "this.fz = 0;" + 
         "this.fn = 0;" +
