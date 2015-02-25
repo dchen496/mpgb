@@ -384,8 +384,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     },
     "rst y*8": {
       op: function(addr) {
-        return sprintf("this.pc = %d;", addr) +
-          h.incClock(16);
+        return h.rst(addr);
       },
       ds: function(mem, pc, addr) {
         return sprintf("rst #%02x", addr);
@@ -411,7 +410,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     "bit y,r[z]": {
       op: function(bit, r) {
         return h.input8(r, "tmp") +
-        h.setFlag("z", sprintf("(tmp >> %d) & 0x01 == 0", bit)) +
+        h.setFlag("z", sprintf("(tmp & (1 << %d)) == 0", bit)) +
         "this.fn = 0;" +
         "this.fh = 1;" +
         h.incPc(2) +
