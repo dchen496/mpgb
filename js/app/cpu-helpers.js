@@ -209,7 +209,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     rlc: function(operand) {
       return this.input8(operand, "tmp") +
         "this.fc = tmp >> 7;" +
-        "tmp = (tmp << 1) | this.fc;" +
+        "tmp = ((tmp << 1) | this.fc) & 0xff;" +
         this.output8(operand, "tmp") +
         "this.fh = 0;" +
         "this.fn = 0;";
@@ -217,7 +217,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     rl: function(operand) {
       return this.input8(operand, "tmp") +
         "var bit = tmp >> 7;" +
-        "tmp = (tmp << 1) | this.fc;" +
+        "tmp = ((tmp << 1) | this.fc) & 0xff;" +
         this.output8(operand, "tmp") +
         "this.fc = bit;" +
         "this.fh = 0;" +
@@ -243,7 +243,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     sla: function(operand) {
       return this.input8(operand, "tmp") +
         "this.fc = tmp >> 7;" +
-        "tmp = tmp << 1;" +
+        "tmp = (tmp << 1) & 0xff;" +
         this.output8(operand, "tmp") +
         "this.fh = 0;" +
         "this.fn = 0;";
