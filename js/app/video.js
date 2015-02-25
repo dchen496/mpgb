@@ -107,6 +107,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       return mode;
     },
     statOp: function(read, value) {
+      console.log("stat op", read, value);
       if(read) {
         var coincidence = this.lyc == this.ly ? 1 : 0;
         return (this.ienables << 3) | (coincidence << 2) | this.getMode();
@@ -292,7 +293,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         var z = color ? 11 : 23;
         if(z <= zbuf[i]) {
           zbuf[i] = z;
-          buf[i] = (this.bgp >> (1 << color)) & 3;
+          buf[i] = (this.bgp >> (color << 1)) & 3;
         }
       }
     },
