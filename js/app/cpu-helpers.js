@@ -39,15 +39,22 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         this.incPcOperand([operand]) +
         "this.pc = (this.pc + offset) & 0xffff;";
     },
-    call: function(operand) {
+    pushPc: function(offset) {
       return this.input16({reg16: "sp"}, "addr") +
         "addr = (addr + 0xfffe) & 0xffff;" +
         this.output16({reg16: "sp"}, "addr") +
         this.input16({reg16: "pc"}, "ret") +
-        "ret = (ret + 3) & 0xffff;" +
-        this.output16({ind16: "sp"}, "ret") +
+        sprintf("ret = (ret + %d) & 0xffff;", offset) +
+        this.output16({ind16: "sp"}, "ret");
+    },
+    call: function(operand) {
+      return this.pushPc(3) + 
         this.input16(operand, "loc") +
         "this.pc = loc;";
+    },
+    rst: function(addr) {
+      return this.pushPc(1) + 
+        sprintf("this.pc = %d;", addr);
     },
     ret: function() {
       return this.pop({reg16: "pc"});
