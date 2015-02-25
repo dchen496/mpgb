@@ -107,7 +107,6 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       return mode;
     },
     statOp: function(read, value) {
-      console.log("stat op", read, value);
       if(read) {
         var coincidence = this.lyc == this.ly ? 1 : 0;
         return (this.ienables << 3) | (coincidence << 2) | this.getMode();
