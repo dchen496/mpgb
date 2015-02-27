@@ -83,6 +83,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       if(read) {
         var bankSize = 0x4000;
         if(addr >= bankSize) {
+          addr -= bankSize;
           if(this.mode) {
             addr += this.lowerBank * bankSize;
           } else {
@@ -91,8 +92,6 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         }
         return this.romImage[addr];
       }
-      this.gbc.evm.update(evm.events.BREAKPOINT, this.gbc.clock);
-      console.log(addr, value);
       switch(true) {
       case addr < 0x2000:
         this.ramEnable = (value & 0x0f) == 0x0a ? 1 : 0;
