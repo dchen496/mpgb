@@ -54,7 +54,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     },
     rst: function(addr) {
       return this.pushPc(1) + 
-        sprintf("this.pc = %d;", addr);
+        sprintf("this.pc = %d;", addr) + this.incClock(16);
     },
     ret: function() {
       return this.pop({reg16: "pc"});
