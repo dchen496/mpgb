@@ -32,7 +32,6 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         } else {
           var oldTimaStart = this.timaStart;
           this.timaStart += ((this.cpu.clock - this.timaStart) >> shift) << shift;
-          console.log(oldTimaStart, this.timaStart);
           this.timaBase = value;
           this.updateOverflowEvent();
           return value;
@@ -46,7 +45,6 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
     },
     tmaOp: function(read, value) {
-      console.log(read, value, this.tma);
       if(read) {
         return this.tma;
       }
