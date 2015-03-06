@@ -141,7 +141,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     },
     "pop rp2[p]": {
       op: function(rp) {
-        return h.pop(rp) + h.incPc(1) + h.incClock(16);
+        return h.pop(rp) + h.incPc(1) + h.incClock(12);
       },
       ds: function(mem, pc, rp) {
         return sprintf("pop %s", gon(rp));
