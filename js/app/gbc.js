@@ -6,6 +6,7 @@ define(function(require) {
   var cartridge = require('./cartridge');
   var timer = require('./timer');
   var video = require('./video');
+  var joypad = require('./joypad');
 
   var CLOCKS_PER_SEC = 1 << 22;
   var CLOCKS_PER_FRAME = Math.round(CLOCKS_PER_SEC / 60);
@@ -20,6 +21,7 @@ define(function(require) {
       this.cartridge = cartridge.create(this, romImage);
       this.timer = timer.create(this.cpu, this.evm);
       this.video = video.create(this.memory, this.cpu, this.evm, frameCallback);
+      this.joypad = joypad.create(this.cpu);
     },
     advance: function(clock) {
       var run = true;

@@ -192,7 +192,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
           break;
 
         case 0x00: // P1/JOYP
-          break;
+          return this.gbc.joypad.joypOp(read, value);
           
         case 0x01: // SB
           if(debugSerial) {
