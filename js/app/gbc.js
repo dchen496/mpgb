@@ -17,7 +17,7 @@ define(function(require) {
 
       this.evm = evm.create();
       this.memory = memory.create(this);
-      this.cpu = cpu.create(this.memory);
+      this.cpu = cpu.create(this.memory, this.evm);
       this.cartridge = cartridge.create(this, romImage);
       this.timer = timer.create(this.cpu, this.evm);
       this.video = video.create(this.memory, this.cpu, this.evm, frameCallback);

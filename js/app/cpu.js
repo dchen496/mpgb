@@ -1,4 +1,4 @@
-define(['./cpu-isa', 'sprintf'], function(isa, sprintf) {
+define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) {
   "use strict"
 
   var irqvectors = {
@@ -18,10 +18,11 @@ define(['./cpu-isa', 'sprintf'], function(isa, sprintf) {
   };
 
   var proto = {
-    init: function(memory) {
+    init: function(memory, evm) {
       this.clock = 0;
 
       this.memory = memory;
+      this.evm = evm;
 
       this.a = 0;
       this.b = 0;
@@ -49,11 +50,11 @@ define(['./cpu-isa', 'sprintf'], function(isa, sprintf) {
 
       this.state = states.NORMAL;
     },
-    advanceToEvent: function(evm) {
-      while(this.clock < evm.nextClock()) {
+    advanceToEvent: function() {
+      while(this.clock < this.evm.nextClock()) {
         switch(this.state) {
         case states.NORMAL:
-          while(this.clock < evm.nextClock() && this.state == states.NORMAL) {
+          while(this.clock < this.evm.nextClock() && this.state == states.NORMAL) {
             var opcode = this.memory.read(this.pc);
             this.ops[opcode].call(this);
           }
@@ -62,10 +63,10 @@ define(['./cpu-isa', 'sprintf'], function(isa, sprintf) {
           this.handleIrq();
           break;
         case states.HALTED:
-          this.clock = evm.nextClock();
+          this.clock = this.evm.nextClock();
           break;
         case states.STOPPED:
-          this.clock = evm.nextClock();
+          this.clock = this.evm.nextClock();
           break;
         /*
         case states.HDMA:
@@ -186,9 +187,9 @@ define(['./cpu-isa', 'sprintf'], function(isa, sprintf) {
   };
 
   return {
-    create: function(memory) {
+    create: function(memory, evm) {
       var cpu = Object.create(proto);
-      cpu.init(memory);
+      cpu.init(memory, evm);
       return cpu;
     },
     irqvectors: irqvectors
