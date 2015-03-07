@@ -1,42 +1,50 @@
-var joy = null;
 define(function() {
   "use strict"
+
+  var buttons = {
+    A : 0,
+    B : 1,
+    SELECT : 2,
+    START : 3,
+    RIGHT : 4,
+    LEFT : 5,
+    UP : 6,
+    DOWN: 7
+  }
+
   var proto = {
     init: function(cpu) {
       this.cpu = cpu;
       this.directionSelect = 0;
       this.buttonSelect = 0;
-      this.directionsPressed = 0;
       this.buttonsPressed = 0;
     },
     joypOp: function(read, value) {
       if(read) {
-        var ret = 0;
-        if(!this.buttonSelect) {
-          ret |= this.buttonsPressed;
+        var ret = 0x0f;
+        if(this.directionSelect) {
+          ret &= ~(this.buttonsPressed >> 4);
+        } else {
+          ret |= (1 << 4);
         }
-        if(!this.directionSelect) {
-          ret |= this.directionsPressed;
+        if(this.buttonSelect) {
+          ret &= ~(this.buttonsPressed & 0x0f);
+        } else {
+          ret |= (1 << 5);
         }
-        return ~ret;
+        return ret;
       }
-      this.directionSelect = (value >> 4) & 1;
-      this.buttonSelect = (value >> 5) & 1;
+      // this register is inverted
+      var inv = ~value;
+      this.directionSelect = (inv >> 4) & 1;
+      this.buttonSelect = (inv >> 5) & 1;
       return value;
     },
-    pressKey: function(buttons, number) {
-      if(buttons) {
-        this.buttonsPressed |= (1 << number);
-      } else {
-        this.directionsPressed |= (1 << number);
-      }
+    press: function(button) {
+      this.buttonsPressed |= (1 << button);
     },
-    unpressKey: function(buttons, number) {
-      if(buttons) {
-        this.buttonsPressed &= ~(1 << number);
-      } else {
-        this.directionsPressed &= ~(1 << number);
-      }
+    unpress: function(button) {
+      this.buttonsPressed &= ~(1 << button);
     }
   }
 
@@ -44,8 +52,8 @@ define(function() {
     create: function(cpu) {
       var joypad = Object.create(proto);
       joypad.init(cpu);
-      joy = joypad;
       return joypad;
-    }
+    },
+    buttons: buttons
   }
 });
