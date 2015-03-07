@@ -1,26 +1,50 @@
-define(['jquery', './gbc', './cpu-disasm'], function($, gbc, cpuDisasm) {
+define(['jquery', './gbc', './cpu-disasm', 'sprintf', 'jquery-cookie'], 
+    function($, gbc, cpuDisasm, sprintf) {
 
-  var tests = [
-    '../cpu_instrs.gb',
-    '01-special.gb',
-    '02-interrupts.gb',
-    '03-op sp,hl.gb',
-    '04-op r,imm.gb',
-    '05-op rp.gb',
-    '06-ld r,r.gb',
-    '07-jr,jp,call,ret,rst.gb',
-    '08-misc instrs.gb',
-    '09-op r,r.gb',
-    '10-bit ops.gb',
-    '11-op a,(hl).gb'
+  var roms = [
+    'tetris.gb',
+    'cpu_instrs/cpu_instrs.gb',
+    'cpu_instrs/individual/01-special.gb',
+    'cpu_instrs/individual/02-interrupts.gb',
+    'cpu_instrs/individual/03-op sp,hl.gb',
+    'cpu_instrs/individual/04-op r,imm.gb',
+    'cpu_instrs/individual/05-op rp.gb',
+    'cpu_instrs/individual/06-ld r,r.gb',
+    'cpu_instrs/individual/07-jr,jp,call,ret,rst.gb',
+    'cpu_instrs/individual/08-misc instrs.gb',
+    'cpu_instrs/individual/09-op r,r.gb',
+    'cpu_instrs/individual/10-bit ops.gb',
+    'cpu_instrs/individual/11-op a,(hl).gb',
+    'instr_timing/instr_timing.gb'
   ];
 
   function main() {
+    var lastPath = $.cookie("romPath");
+    if(lastPath == null || roms.indexOf(lastPath) < 0) {
+      lastPath = roms[0];
+    }
+    romSelected(lastPath);
+    var picker = $('#rompicker');
+    $.each(roms, function(k, v) {
+      picker.append($("<option></option>").attr("value", v).text(v));
+    });
+    picker.val(lastPath);
+    picker.change(reset);
+    $('#reset').click(reset);
+  }
+
+  function reset() {
+    var path = $('#rompicker').val();
+    $.cookie("romPath", path, {expires: 1000});
+    romSelected(path);
+  }
+
+  function romSelected(path) {
+    var canvas = $("#lcd")[0];
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
     var req = new XMLHttpRequest();
-    //req.open('get', 'roms/tetris.gb', true);
-    // failed: 3, 7, 9, 10, 11
-    // passed: 1, 2, 4, 5, 6, 8
-    req.open('get', 'roms/cpu_instrs/individual/' + tests[09], true);
+    req.open('get', 'roms/' + path, true);
     req.responseType = 'arraybuffer';
     req.onload = function(ev) { romLoaded(req.response) };
     req.send(null);
@@ -33,11 +57,11 @@ define(['jquery', './gbc', './cpu-disasm'], function($, gbc, cpuDisasm) {
     gameboy.boot();
     updateLog(gameboy, 0, 0);
 
-    for(var i = 0; i < 8; i++) {
-      $("#adv" + i).click(advanceHandler.bind(this, gameboy, Math.pow(10, i)));
+    for(var i = 0; i < 9; i++) {
+      $("#advance" + i).click(advanceHandler.bind(this, gameboy, Math.pow(10, i)));
     }
-    $("#advcustom").click(function() {
-      var clocks = parseInt($("#advcustom-input")[0].value);
+    $("#advance-custom").click(function() {
+      var clocks = parseInt($("#advance-custom-input")[0].value);
       if(isNaN(clocks)) {
         return;
       }
@@ -66,10 +90,9 @@ define(['jquery', './gbc', './cpu-disasm'], function($, gbc, cpuDisasm) {
   }
 
   function updateLog(gameboy, clocks, execTime) {
-    $("#stats").text("Execution time: " + execTime / 1000.0 + "s " +
-      (clocks / execTime / 1000.0).toFixed(2) + " Mcycles/s " +
-      "delta: " + clocks + " " +
-      "clock: " + gameboy.clock + " ");
+    $("#stats").text(sprintf("wall: %.2fs %.2f M/s delta: %d clock: %d time: %.2fs",
+      execTime / 1000.0, clocks / execTime / 1000.0, 
+      clocks, gameboy.clock, gameboy.clock / Math.pow(2.0,22.0)));
 
     $("#cpu").text(gameboy.cpu.dump());
 
@@ -94,9 +117,10 @@ define(['jquery', './gbc', './cpu-disasm'], function($, gbc, cpuDisasm) {
   }
 
   function frameCallback(fb) {
-    var ctx = $("#lcd")[0].getContext("2d");
+    var canvas = $("#lcd")[0];
+    var ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
-    var imageData = ctx.createImageData(160, 144);
+    var imageData = ctx.createImageData(canvas.width / 4, canvas.height / 4);
     var data = imageData.data;
     for(var i = 0; i < fb.length; i++) {
       data[4*i + 0] = fb[i];
@@ -109,12 +133,13 @@ define(['jquery', './gbc', './cpu-disasm'], function($, gbc, cpuDisasm) {
     var newCanvas = $("<canvas>").attr("width", imageData.width).attr("height", imageData.height)[0];
     newCanvas.getContext("2d").putImageData(imageData, 0, 0);
 
-    ctx.drawImage(newCanvas, 0, 0, 640, 576);
+    ctx.drawImage(newCanvas, 0, 0, canvas.width, canvas.height);
   }
 
   function drawTiles(tiles) {
-    var ctx = $("#tiles")[0].getContext("2d");
-    var imageData = ctx.createImageData(512, 48);
+    var canvas = $("#tiles")[0];
+    var ctx = canvas.getContext("2d");
+    var imageData = ctx.createImageData(canvas.width, canvas.height);
     var data = imageData.data;
     for(var i = 0; i < data.length / 4; i++) {
       var x = i % 512;
