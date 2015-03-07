@@ -6,10 +6,10 @@ define(['sprintf'], function(sprintf) {
   // statically allocated event table
   // events with lower numbers are executed first
   var events = {
-    PAUSE: 0,
-    TIMER_OVERFLOW: 1,
-    VIDEO_LINE: 2,
-    VIDEO_HBLANK: 3
+    TIMER_OVERFLOW: 0,
+    VIDEO_LINE: 1,
+    VIDEO_HBLANK: 2,
+    PAUSE: 3
   };
 
   var proto = {
