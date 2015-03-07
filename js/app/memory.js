@@ -197,7 +197,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         case 0x01: // SB
           if(debugSerial) {
             console.log('sb', read, String.fromCharCode(value), 'pc');
-            this.gbc.evm.update(evm.events.BREAKPOINT, this.gbc.cpu.clock);
+            this.gbc.evm.update(evm.events.PAUSE, this.gbc.cpu.clock);
           }
           break;
         case 0x02: // SC

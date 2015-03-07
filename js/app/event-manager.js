@@ -6,7 +6,7 @@ define(['sprintf'], function(sprintf) {
   // statically allocated event table
   // events with lower numbers are executed first
   var events = {
-    BREAKPOINT: 0,
+    PAUSE: 0,
     TIMER_OVERFLOW: 1,
     VIDEO_LINE: 2,
     VIDEO_HBLANK: 3
@@ -73,6 +73,9 @@ define(['sprintf'], function(sprintf) {
       this.unregister(ev);
       this.callbacks[ev].call(this.contexts[ev], next);
       this.clock = next;
+    },
+    pause: function() {
+      this.update(events.PAUSE, this.clock);
     },
 
     dump: function() {

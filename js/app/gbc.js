@@ -25,7 +25,7 @@ define(function(require) {
     },
     advance: function(clock) {
       var run = true;
-      this.evm.register(evm.events.BREAKPOINT, clock, this, function() {
+      this.evm.register(evm.events.PAUSE, clock, this, function() {
         run = false;
       });
       while(run) {
