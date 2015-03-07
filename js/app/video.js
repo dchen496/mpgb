@@ -212,7 +212,6 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
     },
     lineCallback: function() {
       if(this.ly < ACTIVE_LINES) {
-        this.preprocessOAM();
         var buf = this.drawLine(this.ly);
         this.writeLineToFb(this.ly, buf);
       }
@@ -229,6 +228,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
       if(this.ly == ACTIVE_LINES) {
         this.statIrq(interrupts.VBLANK);
+        this.cpu.irq(cpu.irqvectors.VBLANK);
       }
       this.lineStart = this.cpu.clock;
       this.updateEvents();
@@ -331,7 +331,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         tileIndex += 0x100;
       }
       // TODO cache tile pixel data
-      return this.getPixel(tileIndex, x & 7, y & 7);
+      return this.getTilePixel(tileIndex, x & 7, y & 7);
     },
 
     drawSpriteLine: function(line, buf, zbuf) {
@@ -351,20 +351,31 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
 
         var palette = sprite.palette ? this.obp1 : this.obp0;
         var y0 = sprite.y - 16;
-        var yoff = line - y0;
+        var y = line - y0;
         for(var xoff = x0; xoff < x0 + 8 && xoff < LINE_WIDTH; xoff++) {
-          var color = this.getPixel(sprite.tile, xoff, yoff);
-          var z = i + this.priority * 12;
+          var x = xoff - x0;
+          if(sprite.xflip) {
+            x = 7 - x;
+          }
+          if(sprite.yflip) {
+            y = sprite.height - 1 - y;
+          }
+          var tile = sprite.tile;
+          if(this.spriteSize) {
+            tile &= ~1;
+          }
+          var color = this.getTilePixel(tile, x, y);
+          var z = i + sprite.priority * 12;
           // color 0 is transparent
-          if(color != 0 && z <= zbuf[i]) {
-            zbuf[i] = z;
-            buf[i] = (palette >> (color << 1)) & 3;
+          if(color != 0 && z <= zbuf[xoff]) {
+            zbuf[xoff] = z;
+            buf[xoff] = (palette >> (color << 1)) & 3;
           }
         }
       }
     },
 
-    getPixel: function(tileIndex, xoff, yoff) {
+    getTilePixel: function(tileIndex, xoff, yoff) {
       var pixelAddr = (tileIndex << 4) + (yoff << 1);
       var pixel0 = this.vram[pixelAddr];
       var pixel1 = this.vram[pixelAddr + 1];
@@ -397,6 +408,8 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
     },
     
     getLineSprites: function(line) {
+      // TODO cache visible sprites index
+      this.preprocessOAM();
       var spriteHeight = this.spriteSize ? 16 : 8;
       var oamBegin = 0;
       while(oamBegin < this.oamEntries.length) {
@@ -407,7 +420,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
       var oamEnd = oamBegin;
       while(oamEnd < this.oamEntries.length) {
-        if(line < this.oamEntries[oamEnd].y) {
+        if(line < this.oamEntries[oamEnd].y - 16) {
           break;
         }
         oamEnd++;
@@ -440,7 +453,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         var tile = new Array(64);
         for(var y = 0; y < 8; y++) {
           for(var x = 0; x < 8; x++) {
-            var color = this.getPixel(i, x, y);
+            var color = this.getTilePixel(i, x, y);
             tile[y * 8 + x] = colormap[color];
           }
         }
