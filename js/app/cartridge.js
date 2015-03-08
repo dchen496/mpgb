@@ -157,19 +157,65 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
 
   mbcs[3] = { // MBC3
     init: function(gbc, romImage, cartType) {
-      throw("MBC3 unimplemented");
       this.gbc = gbc;
       this.romImage = romImage;
+      this.ramImage = new Uint8Array(0x8000);
+      this.ramEnable = 0;
+      this.romBank = 0;
+      this.ramBank = 0;
     },
     romOp: function(addr, read, value) {
-      
+      if(read) {
+        var bankSize = 0x4000;
+        if(addr >= bankSize) {
+          addr += (this.romBank - 1) * bankSize;
+        }
+        return this.romImage[addr];
+      }
+      if(addr != 0x2000)
+        console.log(sprintf("%04x %02x", addr, value));
+      switch(true) {
+      case addr < 0x2000:
+        this.ramEnable = (value & 0x0f) == 0x0a ? 1 : 0;
+        break;
+      case addr < 0x4000:
+        value &= 0x7f;
+        this.romBank = value ? value : 1;
+        break;
+      case addr < 0x6000:
+        this.ramBank = value & 0x0f;
+        if(this.ramBank >= 4) {
+          console.log(this.ramBank);
+        }
+        break;
+      case addr < 0x8000:
+        console.log("rtc latch");
+        break;
+      }
     },
-    ramOp: function(add, read, value) {
+    ramOp: function(addr, read, value) {
+      if(!this.ramEnable) {
+        return 0xff;
+      }
+      if(this.ramBank >= 4) {
+        console.log(this.ramBank);
+        if(read) {
+          return 0;
+        }
+        return value;
+      }
+      addr = addr + this.ramBank * 0x2000 - 0xa000;
+      if(read) {
+        return this.ramImage[addr];
+      }
+      return this.ramImage[addr] = value;
     },
     persist: function() {
+      throw("MBC3 persist unimplemented");
     },
     dump: function() {
-      return sprintf("MBC3");
+      return sprintf("MBC3 romBank: %d ramBank: %d ramEnable: %d", 
+          this.romBank, this.ramBank, this.ramEnable);
     }
   }
 
