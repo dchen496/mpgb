@@ -48,7 +48,7 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', 'jquery-cookie'],
     req.responseType = 'arraybuffer';
     req.onload = function(ev) { romLoaded(req.response) };
     req.send(null);
-  };
+  }
 
 
   function romLoaded(arrayBuffer) {
@@ -69,7 +69,7 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', 'jquery-cookie'],
     });
 
     $("#setmemaddr").click(updateMemory.bind(this, gameboy));
-  };
+  }
   
   function updateMemory(gameboy) {
     var addr = parseInt($("#memaddr")[0].value, 16);
