@@ -307,18 +307,18 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       if(y < 0) {
         return;
       }
-      var x = this.wx - 7;
-      if(x < 0) {
-        x = 0;
+      var x0 = this.wx - 7;
+      if(x0 < 0) {
+        x0 = 0;
       }
 
       var mapBase = this.windowTileMapSelect ? 0x1C00 : 0x1800;
-      for(var i = x; i < LINE_WIDTH; i++) {
+      for(var x = x0; x < LINE_WIDTH; x++) {
         var color = this.getBackgroundPixel(mapBase, x, y);
         var z = color ? 10 : 22;
-        if(z <= zbuf[i]) {
-          zbuf[i] = z;
-          buf[i] = (this.bgp >> (color << 1)) & 3;
+        if(z <= zbuf[x]) {
+          zbuf[x] = z;
+          buf[x] = (this.bgp >> (color << 1)) & 3;
         }
       }
     },
