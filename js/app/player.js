@@ -1,26 +1,9 @@
-define(['jquery', './gbc', './joypad', 'jquery-cookie'], 
-    function($, gbc, joypad) {
+define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'], 
+    function($, gbc, joypad, roms) {
 
   var interval = null;
   var gameboy = null;
   var romImage = null;
-
-  var roms = [
-    'tetris.gb',
-    'cpu_instrs/cpu_instrs.gb',
-    'cpu_instrs/individual/01-special.gb',
-    'cpu_instrs/individual/02-interrupts.gb',
-    'cpu_instrs/individual/03-op sp,hl.gb',
-    'cpu_instrs/individual/04-op r,imm.gb',
-    'cpu_instrs/individual/05-op rp.gb',
-    'cpu_instrs/individual/06-ld r,r.gb',
-    'cpu_instrs/individual/07-jr,jp,call,ret,rst.gb',
-    'cpu_instrs/individual/08-misc instrs.gb',
-    'cpu_instrs/individual/09-op r,r.gb',
-    'cpu_instrs/individual/10-bit ops.gb',
-    'cpu_instrs/individual/11-op a,(hl).gb',
-    'instr_timing/instr_timing.gb'
-  ];
 
   function main() {
     var lastPath = $.cookie("romPath");
@@ -83,7 +66,7 @@ define(['jquery', './gbc', './joypad', 'jquery-cookie'],
     var canvas = $("#lcd")[0];
     var ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
-    var imageData = ctx.createImageData(canvas.width / 4, canvas.height / 4);
+    var imageData = ctx.createImageData(canvas.width / 8, canvas.height / 8);
     var data = imageData.data;
     for(var i = 0; i < fb.length; i++) {
       data[4*i + 0] = fb[i];
@@ -91,7 +74,6 @@ define(['jquery', './gbc', './joypad', 'jquery-cookie'],
       data[4*i + 2] = fb[i];
       data[4*i + 3] = 0xff;
     }
-    ctx.putImageData(imageData, 0, 0);
 
     var newCanvas = $("<canvas>").attr("width", imageData.width).attr("height", imageData.height)[0];
     newCanvas.getContext("2d").putImageData(imageData, 0, 0);
