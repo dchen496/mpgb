@@ -116,7 +116,7 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', 'jquery-cookie'],
     $("#cartridge").text(gameboy.cartridge.dump());
   }
 
-  function frameCallback(fb) {
+  function frameCallback(gameboy, fb) {
     var canvas = $("#lcd")[0];
     var ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;

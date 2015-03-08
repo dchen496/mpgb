@@ -38,7 +38,7 @@ define(['sprintf'], function(sprintf) {
       var ev = -1;
       for(var i = 0; i < this.clocks.length; i++) {
         var c = this.clocks[i];
-        if(c >= this.clock && c < bestClock) {
+        if(c < bestClock) {
           ev = i;
           bestClock = c;
         }

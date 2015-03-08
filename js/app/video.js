@@ -21,10 +21,11 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
   var colormap = [200, 150, 50, 0];
 
   var proto = {
-    init: function(memory, cpu, evm, frameCallback) {
-      this.memory = memory;
-      this.cpu = cpu;
-      this.evm = evm;
+    init: function(gbc, frameCallback) {
+      this.gbc = gbc;
+      this.memory = gbc.memory;
+      this.cpu = gbc.cpu;
+      this.evm = gbc.evm;
       this.frameCallback = frameCallback;
 
       this.bgDisplay = 0;
@@ -217,7 +218,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
       this.ly++;
       if(this.ly >= TOTAL_LINES) {
-        this.frameCallback(this.fb);
+        this.frameCallback(this.gbc, this.fb);
         this.frameStart = this.cpu.clock;
         this.ly = 0;
         this.clearFb();
@@ -464,9 +465,9 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
   }
 
   return {
-    create: function(memory, cpu, evm, frameCallback) {
+    create: function(gbc, frameCallback) {
       var video = Object.create(proto);
-      video.init(memory, cpu, evm, frameCallback);
+      video.init(gbc, frameCallback);
       return video;
     }
   }

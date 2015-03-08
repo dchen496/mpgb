@@ -20,7 +20,7 @@ define(function(require) {
       this.cpu = cpu.create(this.memory, this.evm);
       this.cartridge = cartridge.create(this, romImage);
       this.timer = timer.create(this.cpu, this.evm);
-      this.video = video.create(this.memory, this.cpu, this.evm, frameCallback);
+      this.video = video.create(this, frameCallback);
       this.joypad = joypad.create(this.cpu);
     },
     advance: function(clock) {
@@ -35,6 +35,9 @@ define(function(require) {
     },
     advanceBy: function(clocks) {
       this.advance(this.clock + clocks);
+    },
+    pause: function() {
+      this.evm.pause();
     },
     boot: function() {
       this.cpu.pc = 0x0100;
