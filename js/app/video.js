@@ -257,8 +257,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       // window color 1-3 = 10
       // bg color 1-3 = 11
       // sprites below bg = 12..21
-      // window color 0 = 22
-      // bg color 0 = 23
+      // bg color 0 = 22
       // TODO investigate bg-sprite priority in
       // sprite < bg conflicting with sprite > bg case
       var zbuf = new Uint8Array(LINE_WIDTH);
@@ -290,7 +289,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       for(var i = 0; i < LINE_WIDTH; i++) {
         var x = (i + this.scx) & 0xff;
         var color = this.getBackgroundPixel(mapBase, x, y);
-        var z = color ? 11 : 23;
+        var z = color ? 11 : 22;
         if(z <= zbuf[i]) {
           zbuf[i] = z;
           buf[i] = (this.bgp >> (color << 1)) & 3;
@@ -308,14 +307,15 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         return;
       }
       var x0 = this.wx - 7;
-      if(x0 < 0) {
-        x0 = 0;
+      var xstart = x0;
+      if(xstart < 0) {
+        xstart = 0;
       }
 
       var mapBase = this.windowTileMapSelect ? 0x1C00 : 0x1800;
-      for(var x = x0; x < LINE_WIDTH; x++) {
-        var color = this.getBackgroundPixel(mapBase, x, y);
-        var z = color ? 10 : 22;
+      for(var x = xstart; x < LINE_WIDTH; x++) {
+        var color = this.getBackgroundPixel(mapBase, x - x0, y);
+        var z = 10;
         if(z <= zbuf[x]) {
           zbuf[x] = z;
           buf[x] = (this.bgp >> (color << 1)) & 3;
