@@ -7,6 +7,7 @@ define(function(require) {
   var timer = require('./timer');
   var video = require('./video');
   var joypad = require('./joypad');
+  var sound = require('./sound');
 
   var CLOCKS_PER_SEC = 1 << 22;
   var CLOCKS_PER_FRAME = Math.round(CLOCKS_PER_SEC / 60);
@@ -22,6 +23,7 @@ define(function(require) {
       this.timer = timer.create(this.cpu, this.evm);
       this.video = video.create(this, frameCallback);
       this.joypad = joypad.create(this.cpu);
+      this.sound = sound.create();
     },
     advance: function(clock) {
       var run = true;

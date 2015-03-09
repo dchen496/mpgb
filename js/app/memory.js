@@ -145,51 +145,51 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         */
 
         case 0x10: // NR10
-          break;
+          return this.gbc.sound.nr10Op(read, value);
         case 0x11: // NR11
-          break;
+          return this.gbc.sound.nr11Op(read, value);
         case 0x12: // NR12
-          break;
+          return this.gbc.sound.nr12Op(read, value);
         case 0x13: // NR13
-          break;
+          return this.gbc.sound.nr13Op(read, value);
         case 0x14: // NR14
-          break;
+          return this.gbc.sound.nr14Op(read, value);
 
         case 0x16: // NR21
-          break;
+          return this.gbc.sound.nr21Op(read, value);
         case 0x17: // NR22
-          break;
+          return this.gbc.sound.nr22Op(read, value);
         case 0x18: // NR23
-          break;
+          return this.gbc.sound.nr23Op(read, value);
         case 0x19: // NR24
-          break;
+          return this.gbc.sound.nr24Op(read, value);
 
         case 0x1A: // NR30
-          break;
+          return this.gbc.sound.nr30Op(read, value);
         case 0x1B: // NR31
-          break;
+          return this.gbc.sound.nr31Op(read, value);
         case 0x1C: // NR32
-          break;
+          return this.gbc.sound.nr32Op(read, value);
         case 0x1D: // NR33
-          break;
+          return this.gbc.sound.nr33Op(read, value);
         case 0x1E: // NR34
-          break;
+          return this.gbc.sound.nr34Op(read, value);
 
         case 0x20: // NR41
-          break;
+          return this.gbc.sound.nr41Op(read, value);
         case 0x21: // NR42
-          break;
+          return this.gbc.sound.nr42Op(read, value);
         case 0x22: // NR43
-          break;
+          return this.gbc.sound.nr43Op(read, value);
         case 0x23: // NR44
-          break;
+          return this.gbc.sound.nr44Op(read, value);
 
         case 0x24: // NR50
-          break;
+          return this.gbc.sound.nr50Op(read, value);
         case 0x25: // NR51
-          break;
+          return this.gbc.sound.nr51Op(read, value);
         case 0x26: // NR52
-          break;
+          return this.gbc.sound.nr52Op(read, value);
 
         case 0x00: // P1/JOYP
           return this.gbc.joypad.joypOp(read, value);
