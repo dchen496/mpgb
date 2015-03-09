@@ -172,8 +172,6 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         }
         return this.romImage[addr];
       }
-      if(addr != 0x2000)
-        console.log(sprintf("%04x %02x", addr, value));
       switch(true) {
       case addr < 0x2000:
         this.ramEnable = (value & 0x0f) == 0x0a ? 1 : 0;
@@ -184,12 +182,9 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         break;
       case addr < 0x6000:
         this.ramBank = value & 0x0f;
-        if(this.ramBank >= 4) {
-          console.log(this.ramBank);
-        }
         break;
       case addr < 0x8000:
-        console.log("rtc latch");
+        console.log("rtc latch:", addr);
         break;
       }
     },
@@ -198,7 +193,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         return 0xff;
       }
       if(this.ramBank >= 4) {
-        console.log(this.ramBank);
+        console.log("rtc access:", read, this.ramBank, value);
         if(read) {
           return 0;
         }
