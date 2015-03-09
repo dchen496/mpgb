@@ -1,3 +1,5 @@
+gb = null;
+
 define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'], 
     function($, gbc, joypad, roms) {
 
@@ -52,10 +54,10 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
 
-    gameboy = gbc.create(romImage, frameCallback);
+    gb = gameboy = gbc.create(romImage, frameCallback);
     gameboy.boot();
 
-    interval = setInterval(runFrame, 1000 / 60.0);
+    interval = setInterval(runFrame, 1000 / 120.0);
   }
 
   function runFrame() {
