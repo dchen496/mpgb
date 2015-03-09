@@ -183,7 +183,22 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       }
     },
     "daa": {
-      op: "this.daa();" + h.incPc(1) + h.incClock(4)
+      op: h.input8({reg: "a"}, "tmp") +
+        "if(this.fn) {" +
+          "if(this.fh) { tmp = (tmp - 6) & 0xff; }" +
+          "if(this.fc) { tmp -= 0x60; }" +
+        "} else {" +
+          "if(this.fh || (tmp & 0xf) > 9) { tmp += 0x06; }" +
+          "if(this.fc || tmp > 0x9f) { tmp += 0x60; }" +
+        "}" +
+        "this.fh = 0;" +
+        "this.fz = 0;" +
+        "if((tmp & 0x1ff) > 0xff) { this.fc = 1; }" +
+        "tmp &= 0xff;" +
+        h.setFlag("z", "tmp == 0") +
+        h.output8({reg: "a"}, "tmp") +
+        h.incPc(1) + 
+        h.incClock(4)
     },
     "cpl": {
       op: h.input8({reg: "a"}, "tmp") +

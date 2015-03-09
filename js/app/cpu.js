@@ -132,12 +132,6 @@ define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) 
         this.state = states.IRQ;
       }
     },
-    stop: function() {
-      this.state = states.STOPPED;
-    },
-    halt: function() {
-      this.state = states.HALTED;
-    },
     getF: function(value) {
       return (this.fz << 7) | (this.fn << 6) | (this.fh << 5) | (this.fc << 4);
     },
@@ -147,36 +141,11 @@ define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) 
       this.fh = (value >> 5) & 1; 
       this.fc = (value >> 4) & 1;
     },
-    daa: function() {
-      var high = this.a >> 4;
-      var low = this.a & 0xf;
-      var a = this.a;
-      if(!this.fn) {
-        if(this.fh || low > 9) {
-          a += 0x06;
-        }
-        if(this.fc || a > 0x9f) {
-          a += 0x60;
-        }
-      } else {
-        if(this.fh) {
-          a = (a - 6) & 0xff;
-        }
-        if(this.fc) {
-          a -= 0x60;
-        }
-      }
-      this.fh = 0;
-      this.fz = 0;
-      a &= 0x1ff;
-      if((a & 0x100) == 0x100) {
-        this.fc = 1;
-      }
-      a &= 0xff;
-      if(a == 0) {
-        this.fz = 1;
-      }
-      this.a = a;
+    halt: function() {
+      this.state = states.HALTED;
+    },
+    stop: function() {
+      this.state = states.STOPPED;
     },
     dump: function() {
       return sprintf("bc: %02x%02x de: %02x%02x af: %02x%02x hl: %02x%02x sp: %04x\n",
