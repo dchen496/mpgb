@@ -49,7 +49,7 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
       return {ds: res, len: op.len == null ? 1 : op.len};
     },
 
-    disasmCB: function(mem, pc) {
+    _disasmCB: function(mem, pc) {
       var opcode = mem.read(pc+1);
       var instruction = decoder.getCBInstruction(opcode);
       var op = ops.cbOps[instruction[0]];

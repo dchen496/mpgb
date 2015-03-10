@@ -310,7 +310,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
       }
       if("reg" in src) {
         if(src.reg == "f") {
-          return sprintf("var %s = this.getF();", name);
+          return sprintf("var %s = this._getF();", name);
         }
         return sprintf("var %s = this.%s;", name, src.reg);
       }
@@ -327,7 +327,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
       if("reg16" in src) {
         switch(src.reg16) {
           case "af":
-            return sprintf("var %s = (this.a << 8) | this.getF();", name);
+            return sprintf("var %s = (this.a << 8) | this._getF();", name);
           case "bc":
           case "de":
           case "hl":
@@ -351,7 +351,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
       }
       if("reg" in dest) {
         if(dest.reg == "f") {
-          return sprintf("this.setF(%s);", name);
+          return sprintf("this._setF(%s);", name);
         }
         return sprintf("this.%s = %s;", dest.reg, name);
       }
@@ -365,7 +365,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
       if("reg16" in dest) {
         switch(dest.reg16) {
           case "af":
-            return sprintf("this.a = (%s >> 8) & 0xff; this.setF(%s & 0xff);", name, name);
+            return sprintf("this.a = (%s >> 8) & 0xff; this._setF(%s & 0xff);", name, name);
           case "bc":
           case "de":
           case "hl":

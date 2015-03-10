@@ -279,7 +279,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         "var op = this.memory.read(this.pc+1);" +
         "this.cbops[op].call(this);",
       ds: function(mem, pc) {
-        return this.disasmCB(mem, pc);
+        return this._disasmCB(mem, pc);
       },
       len: 2
     },
@@ -301,18 +301,18 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       op: h.incPc(1) + h.incClock(4)
     },
     "halt": {
-      op: "this.halt();" + h.incPc(1) + h.incClock(0)
+      op: "this._halt();" + h.incPc(1) + h.incClock(0)
     },
     "stop": {
-      op: "this.stop();" + h.incPc(2) + h.incClock(0), 
+      op: "this._stop();" + h.incPc(2) + h.incClock(0), 
       // 2 because opcode is 0x10 0x00?
       len: 2
     },
     "di": {
-      op: "this.di();" + h.incPc(1) + h.incClock(4)
+      op: "this._di();" + h.incPc(1) + h.incClock(4)
     },
     "ei": {
-      op: "this.ei();" + h.incPc(1) + h.incClock(4)
+      op: "this._ei();" + h.incPc(1) + h.incClock(4)
     },
 
     // jumps
@@ -395,7 +395,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       }
     },
     "reti": {
-      op: h.ret() + "this.ei();" + h.incClock(16)
+      op: h.ret() + "this._ei();" + h.incClock(16)
     },
     "rst y*8": {
       op: function(addr) {

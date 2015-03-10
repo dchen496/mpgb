@@ -33,7 +33,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
           var oldTimaStart = this.timaStart;
           this.timaStart += ((this.cpu.clock - this.timaStart) >> shift) << shift;
           this.timaBase = value;
-          this.updateOverflowEvent();
+          this._updateOverflowEvent();
           return value;
         }
       } else {
@@ -69,23 +69,23 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       this.clockSelect = value & 0x03;
       this.started = (value >> 2) & 0x01;
 
-      this.updateOverflowEvent();
+      this._updateOverflowEvent();
       return value;
     },
-    updateOverflowEvent: function() {
+    _updateOverflowEvent: function() {
       if(this.started) {
         var shift = shifts[this.clockSelect];
         var ov = ((0x100 - this.timaBase) << shift) + this.timaStart;
-        this.evm.register(evm.events.TIMER_OVERFLOW, ov, this, this.overflowCallback);
+        this.evm.register(evm.events.TIMER_OVERFLOW, ov, this, this._overflowCallback);
       } else {
         this.evm.unregister(evm.events.TIMER_OVERFLOW);
       }
     },
-    overflowCallback: function(clock) {
+    _overflowCallback: function(clock) {
       this.timaBase = this.tma;
       this.timaStart = clock;
       this.cpu.irq(cpu.irqvectors.TIMER);
-      this.updateOverflowEvent();
+      this._updateOverflowEvent();
     },
 
     dump: function() {

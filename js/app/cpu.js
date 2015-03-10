@@ -99,14 +99,14 @@ define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) 
     },
     irq: function(vector) {
       this.iflags |= (1 << vector);
-      this.checkPendingIrq();
+      this._checkPendingIrq();
     },
     iflagOp: function(read, value) {
       if(read) {
         return this.iflags & 0x1F;
       }
       this.iflags = value & 0x1F;
-      this.checkPendingIrq();
+      this._checkPendingIrq();
       return this.iflags;
     },
     ienableOp: function(read, value) {
@@ -114,42 +114,42 @@ define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) 
         return this.ienables & 0x1F;
       }
       this.ienables = value & 0x1F;
-      this.checkPendingIrq();
+      this._checkPendingIrq();
       return this.ienables;
     },
-    di: function() {
+    _di: function() {
       this.ime = 0;
-      this.checkPendingIrq();
+      this._checkPendingIrq();
     },
-    ei: function() {
+    _ei: function() {
       // TODO: investigate timings when EI/RETI are themselves interrupted
       this.ime = 1;
-      this.checkPendingIrq();
+      this._checkPendingIrq();
     },
-    checkPendingIrq: function() {
+    _checkPendingIrq: function() {
       var irqs = this.iflags & this.ienables;
       if((this.ime || this.state == states.HALTED) && irqs) {
         this.state = states.IRQ;
       }
     },
-    getF: function(value) {
+    _getF: function(value) {
       return (this.fz << 7) | (this.fn << 6) | (this.fh << 5) | (this.fc << 4);
     },
-    setF: function(value) {
+    _setF: function(value) {
       this.fz = (value >> 7) & 1;
       this.fn = (value >> 6) & 1; 
       this.fh = (value >> 5) & 1; 
       this.fc = (value >> 4) & 1;
     },
-    halt: function() {
+    _halt: function() {
       this.state = states.HALTED;
     },
-    stop: function() {
+    _stop: function() {
       this.state = states.STOPPED;
     },
     dump: function() {
       return sprintf("bc: %02x%02x de: %02x%02x af: %02x%02x hl: %02x%02x sp: %04x\n",
-            this.b, this.c, this.d, this.e, this.a, this.getF(), this.h, this.l, this.sp) +
+            this.b, this.c, this.d, this.e, this.a, this._getF(), this.h, this.l, this.sp) +
           sprintf("pc: %04x fz: %d fn: %d fh: %d fc: %d ime: %d if: %02x ie: %02x clock: %d",
             this.pc, this.fz, this.fn, this.fh, this.fc, this.ime, this.iflags, this.ienables, this.clock);
     }

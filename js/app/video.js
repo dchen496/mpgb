@@ -79,38 +79,16 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       if(!wasEnabled && this.enable) {
         this.frameStart = this.cpu.clock;
         this.lineStart = this.cpu.clock;
-        this.clearFb();
+        this._clearFb();
       } else if(!this.enable) {
-        this.clearFb();
+        this._clearFb();
       }
-      this.updateEvents();
-    },
-    getMode: function() {
-      var mode = 0;
-      if(this.enable) {
-        var frameClocks = this.cpu.clock - this.frameStart;
-        var lineClocks = this.cpu.clock - this.lineStart;
-        switch(true) {
-        case frameClocks >= ACTIVE_CLOCKS:
-          mode = 1;
-          break;
-        case lineClocks < MODE2_CLOCKS:
-          mode = 2;
-          break;
-        case lineClocks < MODE3_CLOCKS:
-          mode = 3;
-          break;
-        default: // HBLANK
-          mode = 0;
-          break;
-        }
-      }
-      return mode;
+      this._updateEvents();
     },
     statOp: function(read, value) {
       if(read) {
         var coincidence = this.lyc == this.ly ? 1 : 0;
-        return (this.ienables << 3) | (coincidence << 2) | this.getMode();
+        return (this.ienables << 3) | (coincidence << 2) | this._getMode();
       }
       this.ienables = (value >> 3) & 0xf;
       return value;
@@ -200,55 +178,77 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       return this.oam[off] = value;
     },
 
-    updateEvents: function() {
+    _getMode: function() {
+      var mode = 0;
+      if(this.enable) {
+        var frameClocks = this.cpu.clock - this.frameStart;
+        var lineClocks = this.cpu.clock - this.lineStart;
+        switch(true) {
+        case frameClocks >= ACTIVE_CLOCKS:
+          mode = 1;
+          break;
+        case lineClocks < MODE2_CLOCKS:
+          mode = 2;
+          break;
+        case lineClocks < MODE3_CLOCKS:
+          mode = 3;
+          break;
+        default: // HBLANK
+          mode = 0;
+          break;
+        }
+      }
+      return mode;
+    },
+    _updateEvents: function() {
       if(this.enable) {
         this.evm.register(evm.events.VIDEO_LINE, this.lineStart +
-            LINE_CLOCKS, this, this.lineCallback);
+            LINE_CLOCKS, this, this._lineCallback);
         this.evm.register(evm.events.VIDEO_HBLANK, this.lineStart +
-            MODE2_CLOCKS + MODE3_CLOCKS, this, this.hblankCallback);
+            MODE2_CLOCKS + MODE3_CLOCKS, this, this._hblankCallback);
       } else {
         this.evm.unregister(evm.events.VIDEO_LINE);
         this.evm.unregister(evm.events.VIDEO_HBLANK);
       }
     },
-    lineCallback: function() {
+    _lineCallback: function() {
       if(this.ly < ACTIVE_LINES) {
-        var buf = this.drawLine(this.ly);
-        this.writeLineToFb(this.ly, buf);
+        var buf = this._drawLine(this.ly);
+        this._writeLineToFb(this.ly, buf);
       }
       this.ly++;
       if(this.ly >= TOTAL_LINES) {
         this.frameCallback(this.gbc, this.fb);
         this.frameStart = this.cpu.clock;
         this.ly = 0;
-        this.clearFb();
-        this.statIrq(interrupts.OAM);
+        this._clearFb();
+        this._statIrq(interrupts.OAM);
       }
       if(this.ly == this.lyc) {
-        this.statIrq(interrupts.COINCIDENCE);
+        this._statIrq(interrupts.COINCIDENCE);
       }
       if(this.ly == ACTIVE_LINES) {
-        this.statIrq(interrupts.VBLANK);
+        this._statIrq(interrupts.VBLANK);
         this.cpu.irq(cpu.irqvectors.VBLANK);
       }
       this.lineStart = this.cpu.clock;
-      this.updateEvents();
+      this._updateEvents();
     },
-    hblankCallback: function() {
-      this.statIrq(interrupts.HBLANK);
+    _hblankCallback: function() {
+      this._statIrq(interrupts.HBLANK);
     },
-    statIrq: function(vector) {
+    _statIrq: function(vector) {
       if(this.ienables & (1 << vector)) {
         this.cpu.irq(cpu.irqvectors.LCD);
       }
     },
-    clearFb: function() {
+    _clearFb: function() {
       for(var i = 0; i < this.fb.length; i++) {
         this.fb[i] = 0;
       }
     },
 
-    drawLine: function(line) {
+    _drawLine: function(line) {
       // initialize to white
       var buf = new Uint8Array(LINE_WIDTH);
 
@@ -265,21 +265,21 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         zbuf[i] = 0xff;
       }
 
-      this.drawBackgroundLine(line, buf, zbuf);
-      this.drawWindowLine(line, buf, zbuf);
-      this.drawSpriteLine(line, buf, zbuf);
+      this._drawBackgroundLine(line, buf, zbuf);
+      this._drawWindowLine(line, buf, zbuf);
+      this._drawSpriteLine(line, buf, zbuf);
 
       return buf;
     },
 
-    writeLineToFb: function(line, buf) {
+    _writeLineToFb: function(line, buf) {
       var base = LINE_WIDTH * line;
       for(var i = 0; i < LINE_WIDTH; i++) {
         this.fb[base + i] = colormap[buf[i]];
       }
     },
 
-    drawBackgroundLine: function(line, buf, zbuf) {
+    _drawBackgroundLine: function(line, buf, zbuf) {
       if(!this.bgDisplay) {
         return;
       }
@@ -288,7 +288,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       var y = (line + this.scy) & 0xff;
       for(var i = 0; i < LINE_WIDTH; i++) {
         var x = (i + this.scx) & 0xff;
-        var color = this.getBackgroundPixel(mapBase, x, y);
+        var color = this._getBackgroundPixel(mapBase, x, y);
         var z = color ? 11 : 22;
         if(z <= zbuf[i]) {
           zbuf[i] = z;
@@ -297,7 +297,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
     },
 
-    drawWindowLine: function(line, buf, zbuf) {
+    _drawWindowLine: function(line, buf, zbuf) {
       if(!this.windowEnable) {
         return;
       }
@@ -314,7 +314,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
 
       var mapBase = this.windowTileMapSelect ? 0x1C00 : 0x1800;
       for(var x = xstart; x < LINE_WIDTH; x++) {
-        var color = this.getBackgroundPixel(mapBase, x - x0, y);
+        var color = this._getBackgroundPixel(mapBase, x - x0, y);
         var z = 10;
         if(z <= zbuf[x]) {
           zbuf[x] = z;
@@ -323,7 +323,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
     },
 
-    getBackgroundPixel: function(mapBase, x, y) {
+    _getBackgroundPixel: function(mapBase, x, y) {
       var mapIndex = ((y >> 3) << 5) + (x >> 3);
       var tileIndex = this.vram[mapBase + mapIndex];
       // This is equivalent to the spec for the tile data map, without
@@ -332,15 +332,15 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         tileIndex += 0x100;
       }
       // TODO cache tile pixel data
-      return this.getTilePixel(tileIndex, x & 7, y & 7);
+      return this._getTilePixel(tileIndex, x & 7, y & 7);
     },
 
-    drawSpriteLine: function(line, buf, zbuf) {
+    _drawSpriteLine: function(line, buf, zbuf) {
       if(!this.spriteEnable) {
         return;
       }
 
-      var sprites = this.getLineSprites(line);
+      var sprites = this._getLineSprites(line);
       var height = this.spriteSize ? 16 : 8;
 
       for(var i = 0; i < sprites.length; i++) {
@@ -365,7 +365,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
           if(this.spriteSize) {
             tile &= ~1;
           }
-          var color = this.getTilePixel(tile, x, y);
+          var color = this._getTilePixel(tile, x, y);
           var z = i + sprite.priority * 12;
           // color 0 is transparent
           if(color != 0 && z <= zbuf[xoff]) {
@@ -376,7 +376,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       }
     },
 
-    getTilePixel: function(tileIndex, xoff, yoff) {
+    _getTilePixel: function(tileIndex, xoff, yoff) {
       var pixelAddr = (tileIndex << 4) + (yoff << 1);
       var pixel0 = this.vram[pixelAddr];
       var pixel1 = this.vram[pixelAddr + 1];
@@ -386,7 +386,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       return (msb << 1) | lsb; 
     },
 
-    preprocessOAM: function() {
+    _preprocessOAM: function() {
       if(!this.oamDirty)
         return;
       this.oamDirty = false;
@@ -408,9 +408,9 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       });
     },
     
-    getLineSprites: function(line) {
+    _getLineSprites: function(line) {
       // TODO cache visible sprites index
-      this.preprocessOAM();
+      this._preprocessOAM();
       var spriteHeight = this.spriteSize ? 16 : 8;
       var oamBegin = 0;
       while(oamBegin < this.oamEntries.length) {
@@ -454,7 +454,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         var tile = new Array(64);
         for(var y = 0; y < 8; y++) {
           for(var x = 0; x < 8; x++) {
-            var color = this.getTilePixel(i, x, y);
+            var color = this._getTilePixel(i, x, y);
             tile[y * 8 + x] = colormap[color];
           }
         }
