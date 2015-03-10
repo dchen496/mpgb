@@ -2,6 +2,7 @@ define([], [
   'tetris.gb',
   'kirbys-dreamland.gb',
   'pokemon-red.gb',
+  'pokemon-gold.gb',
   'cpu_instrs/cpu_instrs.gb',
   'cpu_instrs/individual/01-special.gb',
   'cpu_instrs/individual/02-interrupts.gb',
