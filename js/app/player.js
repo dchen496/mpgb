@@ -1,4 +1,6 @@
-gb = null;
+var gb = null;
+var pause = null;
+var resume = null;
 
 define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'], 
     function($, gbc, joypad, roms) {
@@ -57,7 +59,7 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
     gb = gameboy = gbc.create(romImage, frameCallback);
     gameboy.boot();
 
-    interval = setInterval(runFrame, 1000 / 120.0);
+    resume(59.7275);
   }
 
   function runFrame() {
@@ -121,6 +123,20 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
     if(button == null)
       return;
     gameboy.joypad.unpress(button);
+  }
+
+  pause = function pause() {
+    gb.pause();
+    if(interval != null) {
+      clearInterval(interval);
+    }
+  }
+
+  resume = function resume(fps) {
+    if(interval != null) {
+      clearInterval(interval);
+    }
+    interval = setInterval(runFrame, 1000.0 / fps);
   }
 
   return main;
