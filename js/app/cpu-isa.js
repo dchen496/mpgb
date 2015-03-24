@@ -16,7 +16,7 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
     return ops.cbOps[decoded[0]].op.apply(this, decoded.slice(1));
   }
 
-  function testGenerateOpStrings() {
+  function testCompileOpStrings() {
     var total = 0;
     var pass = true;
     var classes = [generateOpString, generateCBOpString];
@@ -65,9 +65,8 @@ define(['sprintf', './cpu-ops', './cpu-decoder'], function(sprintf, ops, decoder
       }
       return ops;
     },
-    test: function() {
-      return testGenerateOpStrings();
-    },
+    tests: ['testCompileOpStrings'],
+    testCompileOpStrings: testCompileOpStrings,
     dumpFormattedOpStrings: function() {
       var out = [];
       for(var i = 0; i < 256; i++) {

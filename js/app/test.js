@@ -10,15 +10,23 @@
       var exp = null;
       var msg = "";
       for(var i = 0; i < modules.length; i++) {
-        var res = modules[i].test();
-        msg = msg + names[i];
-        if(res) {
-          msg = msg + " PASS";
-        } else {
-          msg = msg + " FAIL";
+        var tests = modules[i].tests;
+        for(var j = 0; j < tests.length; j++) {
+          var res;
+          try {
+            res = modules[i][tests[j]]();
+          } catch(e) {
+            res = false;
+          }
+          msg += names[i] + " " + tests[j];
+          if(res) {
+            msg += " PASS";
+          } else {
+            msg += " FAIL";
+          }
+          msg = msg + "<br />";
+          success = success && res;
         }
-        msg = msg + "<br />";
-        success = success && res;
       }
       if(success)
         msg = "<h1>PASS</h1>" + msg;
