@@ -184,7 +184,6 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         this.ramBank = value & 0x0f;
         break;
       case addr < 0x8000:
-        console.log("rtc latch:", addr);
         break;
       }
     },
@@ -193,7 +192,6 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
         return 0xff;
       }
       if(this.ramBank >= 4) {
-        console.log("rtc access:", read, this.ramBank, value);
         if(read) {
           return 0;
         }
@@ -234,21 +232,69 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
 
   mbcs[5] = { // MBC5
     init: function(gbc, romImage, cartType) {
-      throw("MBC5 unimplemented");
       this.gbc = gbc;
       this.romImage = romImage;
+      this.ramImage = new Uint8Array(0x20000);
+      this.ramEnable = 0;
+      this.lowerBank = 0x01; // TODO ??
+      this.upperBank = 0x00;
+      this.ramBank = 0x00;
     },
     romOp: function(addr, read, value) {
-      
+      if(read) {
+        var bankSize = 0x4000;
+        if(addr >= bankSize) {
+          addr -= bankSize;
+          if(this.mode) {
+            addr += this.lowerBank * bankSize;
+          } else {
+            addr += ((this.upperBank << 8) + this.lowerBank) * bankSize;
+          }
+        }
+        return this.romImage[addr];
+      }
+      switch(true) {
+      case addr < 0x2000:
+        this.ramEnable = (value & 0x0f) == 0x0a ? 1 : 0;
+        break;
+      case addr < 0x3000:
+        this.lowerBank = value;
+        break;
+      case addr < 0x4000:
+        this.upperBank = value & 0x01;
+        break;
+      case addr < 0x6000:
+        this.ramBank = value & 0x0f;
+        break;
+      }
     },
-    ramOp: function(add, read, value) {
+    ramOp: function(addr, read, value) {
+      if(!this.ramEnable) {
+        return 0xff;
+      }
+      addr -= 0xa000;
+      if(this.mode) {
+        addr += this.ramBank * 0x2000;
+      }
+      
+      if(read) {
+        return this.ramImage[addr];
+      }
+      return this.ramImage[addr] = value;
     },
     persist: function() {
+      throw("MBC5 persist unimplemented");
     },
     dump: function() {
-      return sprintf("MBC5");
+      if(this.mode) {
+        return sprintf("MBC1 mode: 1 romBank: %d ramBank: %d ramEnable: %d", 
+            this.lowerBank, this.upperBank, this.ramEnable);
+      } else {
+        return sprintf("MBC1 mode: 0 romBank: %d ramBank: 0 ramEnable: %d",
+            this.lowerBank + 32 * this.upperBank, this.ramEnable);
+      }
     }
-  };
+  }
 
   return {
     create: function(gbc, romImage) {
