@@ -65,7 +65,10 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie']
   function advanceHandler(gameboy, clocks) {
     var start = new Date().getTime();
     var startClk = gameboy.clock;
-    gameboy.advanceBy(clocks);
+    gameboy.registerEvent(gameboy.clock + clocks, function() {
+      gameboy.pause();
+    });
+    gameboy.advance();
     var end = new Date().getTime();
     var endClk = gameboy.clock;
     var time = end - start;

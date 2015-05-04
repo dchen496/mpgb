@@ -8,6 +8,7 @@ define(function(require) {
   var video = require('./video');
   var joypad = require('./joypad');
   var sound = require('./sound');
+  var serial = require('./serial');
 
   var CLOCKS_PER_SEC = 1 << 22;
   var CLOCKS_PER_FRAME = Math.round(CLOCKS_PER_SEC / 60);
@@ -24,40 +25,37 @@ define(function(require) {
       this.video = video.create(this, frameCallback);
       this.joypad = joypad.create(this.cpu);
       this.sound = sound.create();
+      this.serial = serial.create(this, this.cpu, this.evm);
+      this.run = false;
     },
-    advance: function(clock) {
-      var run = true;
-      this.evm.register(evm.events.PAUSE, clock, this, function() {
-        run = false;
-      });
-      while(run) {
+    advance: function() {
+      this.run = true;
+      while(this.run) {
         this.clock = this.cpu.advanceToEvent(this.evm);
         this.evm.runEvent();
       }
     },
-    advanceBy: function(clocks) {
-      this.advance(this.clock + clocks);
-    },
     pause: function() {
-      this.evm.pause();
+      this.run = false;
+    },
+    running: function() {
+      return this.run;
+    },
+    registerEvent: function(clock, callback) {
+      this.evm.register(evm.events.EXTERNAL, clock, this, callback);
     },
     boot: function() {
-      this.cpu.pc = 0x0100;
-      this.cpu.sp = 0xFFFE;
-
-      var regs = [
-        ["a", 0x01],
-        ["b", 0xB0],
-        ["c", 0x00],
-        ["d", 0x13],
-        ["e", 0x00],
-        ["f", 0xD8],
-        ["h", 0x01],
-        ["l", 0x4D],
-      ];
-      for(var i = 0; i < regs.length; i++) {
-        this.cpu[regs[i][0]] = regs[i][1];
-      }
+      var cpu = this.cpu;
+      cpu.a = 0x01;
+      cpu.b = 0xB0;
+      cpu.c = 0x00;
+      cpu.d = 0x13;
+      cpu.e = 0x00;
+      cpu.f = 0xD8;
+      cpu.h = 0x01;
+      cpu.l = 0x4D;
+      cpu.pc = 0x0100;
+      cpu.sp = 0xFFFE;
 
       var writes = [
         [0xFF05, 0x00], // TIMA
@@ -92,7 +90,7 @@ define(function(require) {
         [0xFF4B, 0x00], // WX
         [0xFFFF, 0x00], // IE
       ];
-      for(var i = 0; i < writes.length; i++) {
+      for(var i in writes) {
         this.memory.write(writes[i][0], writes[i][1]);
       }
     }

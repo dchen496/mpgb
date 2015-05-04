@@ -63,7 +63,7 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
   }
 
   function runFrame() {
-    gameboy.advanceBy(1000000);
+    gameboy.advance(1000000);
   }
 
   function frameCallback(gb, fb) {

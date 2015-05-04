@@ -9,7 +9,8 @@ define(['sprintf'], function(sprintf) {
     TIMER_OVERFLOW: 0,
     VIDEO_LINE: 1,
     VIDEO_HBLANK: 2,
-    PAUSE: 3
+    SERIAL_SYNC: 3,
+    EXTERNAL: 4
   };
 
   var proto = {
@@ -74,10 +75,6 @@ define(['sprintf'], function(sprintf) {
       this.callbacks[ev].call(this.contexts[ev], next);
       this.clock = next;
     },
-    pause: function() {
-      this.update(events.PAUSE, this.clock);
-    },
-
     dump: function() {
       var keys = Object.keys(events);
       var res = [];

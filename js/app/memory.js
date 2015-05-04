@@ -1,8 +1,6 @@
 define(['sprintf', './event-manager'], function(sprintf, evm) {
   "use strict"
 
-  var debugSerial = false;
-
   /*
    * Memory Map
    *
@@ -195,16 +193,9 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
           return this.gbc.joypad.joypOp(read, value);
           
         case 0x01: // SB
-          if(debugSerial) {
-            console.log('sb', read, String.fromCharCode(value), 'pc');
-            this.gbc.evm.update(evm.events.PAUSE, this.gbc.cpu.clock);
-          }
-          break;
+          return this.gbc.serial.sbOp(read, value);
         case 0x02: // SC
-          if(debugSerial) {
-            console.log('sc', read, value);
-          }
-          break;
+          return this.gbc.serial.scOp(read, value);
 
         case 0x04: // DIV
           return this.gbc.timer.divOp(read, value);
