@@ -3,17 +3,11 @@ define(['./gbc', './cpu', './event-manager'], function(gbc, cpu, evm) {
 
   var proto = {
     init: function(romImage, frameCallback1, frameCallback2) {
-      this.userFrameCallback1 = frameCallback1;
-      this.userFrameCallback2 = frameCallback2;
       this.gbc1 = gbc.create(romImage, frameCallback1);
       this.gbc2 = gbc.create(romImage, frameCallback2);
       this.serial1 = this.gbc1.serial;
       this.serial2 = this.gbc2.serial;
-
       this.run = false;
-      this.prevFrame = 1;
-      this.prevFrame2 = 1;
-
       this.serial1.linkWith(this.gbc2);
       this.serial2.linkWith(this.gbc1);
     },
@@ -31,22 +25,6 @@ define(['./gbc', './cpu', './event-manager'], function(gbc, cpu, evm) {
         this.gbc2.advance();
         tryTransfer();
       }
-    },
-    frameCallback1: function(gbc, fb) {
-      if(this.prevFrame2 == 1) {
-        this.pause();
-      }
-      this.prevFrame2 = this.prevFrame;
-      this.prevFrame = 1;
-      this.userFrameCallback1(gbc, fb);
-    },
-    frameCallback2: function(gbc, fb) {
-      if(this.prevFrame2 == 2) {
-        this.pause();
-      }
-      this.prevFrame2 = this.prevFrame;
-      this.prevFrame = 2;
-      this.userFrameCallback2(gbc, fb);
     },
     tryTransfer: function() {
       if(this.serial1.transferStart && this.serial2.transferStart) {
