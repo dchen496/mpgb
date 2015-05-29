@@ -1,9 +1,6 @@
-var gb = null;
-var pause = null;
-var resume = null;
-
 define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'], 
     function($, gbc, joypad, roms) {
+  "use strict"
 
   var interval = null;
   var gameboy = null;
@@ -56,7 +53,7 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
 
-    gb = gameboy = gbc.create(romImage, frameCallback);
+    gameboy = gbc.create(romImage, frameCallback);
     gameboy.boot();
 
     resume(59.7275);
@@ -80,7 +77,7 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
 
     ctx.drawImage(newCanvas, 0, 0, canvas.width, canvas.height);
 
-    gb.pause();
+    gameboy.pause();
   }
 
   function getButton(keycode) {
@@ -121,14 +118,14 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
     gameboy.joypad.unpress(button);
   }
 
-  pause = function pause() {
-    gb.pause();
+  function pause() {
+    gameboy.pause();
     if(interval != null) {
       clearInterval(interval);
     }
   }
 
-  resume = function resume(fps) {
+  function resume(fps) {
     if(interval != null) {
       clearInterval(interval);
     }

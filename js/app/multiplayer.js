@@ -1,9 +1,6 @@
-var gblink = null;
-var pause = null;
-var resume = null;
-
 define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'], 
     function($, gbcLink, joypad, roms) {
+  "use strict"
 
   var interval = null;
   var gameboyLink = null;
@@ -64,7 +61,7 @@ define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
 
-    gblink = gameboyLink = gbcLink.create(romImage, frameCallback1, frameCallback2);
+    gameboyLink = gbcLink.create(romImage, frameCallback1, frameCallback2);
     gameboyLink.boot();
 
     resume(59.7275);
@@ -145,14 +142,14 @@ define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'],
     }
   }
 
-  pause = function pause() {
+  function pause() {
     gb.pause();
     if(interval != null) {
       clearInterval(interval);
     }
   }
 
-  resume = function resume(fps) {
+  function resume(fps) {
     if(interval != null) {
       clearInterval(interval);
     }
