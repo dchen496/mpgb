@@ -1,15 +1,21 @@
-var gb = null;
+var gblink = null;
 var pause = null;
 var resume = null;
 
-define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'], 
-    function($, gbc, joypad, roms) {
+define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'], 
+    function($, gbcLink, joypad, roms) {
 
   var interval = null;
-  var gameboy = null;
+  var gameboyLink = null;
   var romImage = null;
+  var picker = null;
+  var lcds = [];
 
   function main() {
+    picker = $('#rompicker');
+    lcds[0] = $('#lcd0')[0];
+    lcds[1] = $('#lcd1')[0];
+
     var lastPath = $.cookie("romPath");
     if(lastPath == null || roms.indexOf(lastPath) < 0) {
       lastPath = roms[0];
@@ -17,7 +23,6 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
 
     romSelected(lastPath);
 
-    var picker = $('#rompicker');
     $.each(roms, function(k, v) {
       picker.append($("<option></option>").attr("value", v).text(v));
     });
@@ -30,20 +35,23 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
   }
 
   function selectRom() {
-    var path = $('#rompicker').val();
+    var path = picker.val();
     $.cookie("romPath", path, {expires: 1000});
     romSelected(path);
   }
 
   function romSelected(path) {
-    var canvas = $("#lcd")[0];
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height); 
     var req = new XMLHttpRequest();
     req.open('get', 'roms/' + path, true);
     req.responseType = 'arraybuffer';
     req.onload = function(ev) { romLoaded(req.response) };
     req.send(null);
+
+    for(var i in lcds) {
+      var canvas = lcds[i];
+      var ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height); 
+    }
   }
 
   function romLoaded(arrayBuffer) {
@@ -56,17 +64,26 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
 
-    gb = gameboy = gbc.create(romImage, frameCallback);
-    gameboy.boot();
+    gblink = gameboyLink = gbcLink.create(romImage, frameCallback1, frameCallback2);
+    gameboyLink.boot();
 
     resume(59.7275);
   }
 
-  function frameCallback(gb, fb) {
-    var canvas = $("#lcd")[0];
+  function frameCallback1(link, gb, fb) {
+    drawFrame(0, fb);
+    link.pause();
+  }
+
+  function frameCallback2(link, gb, fb) {
+    drawFrame(1, fb);
+  }
+
+  function drawFrame(index, fb) {
+    var canvas = lcds[index];
     var ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
-    var imageData = ctx.createImageData(canvas.width / 8, canvas.height / 8);
+    var imageData = ctx.createImageData(canvas.width / 4, canvas.height / 4);
     var data = imageData.data;
     for(var i = 0; i < fb.length; i++) {
       data[4*i + 0] = fb[i];
@@ -75,12 +92,11 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
       data[4*i + 3] = 0xff;
     }
 
-    var newCanvas = $("<canvas>").attr("width", imageData.width).attr("height", imageData.height)[0];
+    var newCanvas = $("<canvas>").attr("width", imageData.width)
+                                 .attr("height", imageData.height)[0];
     newCanvas.getContext("2d").putImageData(imageData, 0, 0);
 
     ctx.drawImage(newCanvas, 0, 0, canvas.width, canvas.height);
-
-    gb.pause();
   }
 
   function getButton(keycode) {
@@ -111,14 +127,22 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
     var button = getButton(ev.keyCode);
     if(button == null)
       return;
-    gameboy.joypad.press(button);
+    if(ev.shiftKey) {
+      gameboyLink.gbc2.joypad.press(button);
+    } else {
+      gameboyLink.gbc1.joypad.press(button);
+    }
   }
 
   function keyUp(ev) {
     var button = getButton(ev.keyCode);
     if(button == null)
       return;
-    gameboy.joypad.unpress(button);
+    if(ev.shiftKey) {
+      gameboyLink.gbc2.joypad.unpress(button);
+    } else {
+      gameboyLink.gbc1.joypad.unpress(button);
+    }
   }
 
   pause = function pause() {
@@ -133,7 +157,7 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
     interval = setInterval(function() {
-      gameboy.advance();
+      gameboyLink.advance();
     }, 1000.0 / fps);
   }
 

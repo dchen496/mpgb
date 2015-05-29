@@ -27,16 +27,16 @@ define(['./event-manager', './cpu'], function(evm, cpu) {
       this.transferStart = (value >> 7) & 1;
       if(this.transferStart && this.internalClock && this.otherGameboy != null) {
         // stretch the sync interval to when the transfer actually completes
-        this.evm.update(evm.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS);
+        this.evm.update(evm.events.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS);
         this.otherGameboy.evm.update(evm.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS);
       }
     },
     linkWith: function(otherGameboy) {
       this.otherGameboy = otherGameboy;
-      this.evm.register(evm.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS, this, this.sync);
+      this.evm.register(evm.events.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS, this, this.sync);
     },
     sync: function() {
-      this.evm.update(evm.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS);
+      this.evm.update(evm.events.SERIAL_SYNC, this.cpu.clock + TRANSFER_CLOCKS);
       this.gbc.pause();
     }
   }
