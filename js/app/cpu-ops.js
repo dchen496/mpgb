@@ -1,7 +1,7 @@
 define(['sprintf', './cpu-helpers'], function(sprintf, h) {
   "use strict"
 
-  var gon = h.getOperatorName;
+  var getOp = h.getOperatorName;
 
   var ops = {
     // 8-bit loads
@@ -13,7 +13,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.ld(r1, r2) + h.incClock(clocks);
       },
       ds: function(mem, pc, r1, r2) {
-        return sprintf("ld %s,%s", gon(r1), gon(r2));
+        return sprintf("ld %s,%s", getOp(r1), getOp(r2));
       }
     },
     "ld r[y],n": {
@@ -22,7 +22,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
           h.incClockOperand(r, {reg: 8, ind: 12});
       },
       ds: function(mem, pc, r) {
-      return sprintf("ld %s,#%02x", gon(r), mem.read(pc+1));
+      return sprintf("ld %s,#%02x", getOp(r), mem.read(pc+1));
       },
       len: 2
     },
@@ -113,7 +113,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
           h.incPc(3) + h.incClock(12);
       },
       ds: function(mem, pc, rp) {
-        return sprintf("ld %s,#%04x", gon(rp), mem.read16(pc+1));
+        return sprintf("ld %s,#%04x", getOp(rp), mem.read16(pc+1));
       },
       len: 3
     },
@@ -136,7 +136,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.push(rp) + h.incPc(1) + h.incClock(16);
       },
       ds: function(mem, pc, rp) {
-        return sprintf("push %s", gon(rp));
+        return sprintf("push %s", getOp(rp));
       }
     },
     "pop rp2[p]": {
@@ -144,7 +144,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.pop(rp) + h.incPc(1) + h.incClock(12);
       },
       ds: function(mem, pc, rp) {
-        return sprintf("pop %s", gon(rp));
+        return sprintf("pop %s", getOp(rp));
       }
     },
 
@@ -163,7 +163,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.aluOp(alu, r);
       },
       ds: function(mem, pc, alu, r) {
-        return sprintf("%s %s", alu, gon(r));
+        return sprintf("%s %s", alu, getOp(r));
       }
     },
     "inc r[y]": {
@@ -171,7 +171,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.inc(r);
       },
       ds: function(mem, pc, r) {
-        return sprintf("inc %s", gon(r));
+        return sprintf("inc %s", getOp(r));
       }
     },
     "dec r[y]": {
@@ -179,7 +179,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.dec(r);
       },
       ds: function(mem, pc, r) {
-        return sprintf("dec %s", gon(r));
+        return sprintf("dec %s", getOp(r));
       }
     },
     "daa": {
@@ -223,7 +223,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
           h.incPc(1) + h.incClock(8);
       },
       ds: function(mem, pc, rp) {
-        return sprintf("add hl,%s", gon(rp));
+        return sprintf("add hl,%s", getOp(rp));
       }
     },
     "inc rp[p]": {
@@ -231,7 +231,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.inc16(rp);
       },
       ds: function(mem, pc, rp) {
-        return sprintf("inc %s", gon(rp));
+        return sprintf("inc %s", getOp(rp));
       }
     },
     "dec rp[p]": {
@@ -239,7 +239,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.dec16(rp);
       },
       ds: function(mem, pc, rp) {
-        return sprintf("dec %s", gon(rp));
+        return sprintf("dec %s", getOp(rp));
       }
     },
     "add sp,d": {
@@ -419,7 +419,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         return h.rotOp(rot, r);
       },
       ds: function(mem, pc, rot, r) {
-        return sprintf("rot %s,%s", rot, gon(r));
+        return sprintf("rot %s,%s", rot, getOp(r));
       }
     },
     "bit y,r[z]": {
@@ -432,7 +432,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         h.incClockOperand(r, {reg: 8, ind: 12});
       },
       ds: function(mem, pc, bit, r) {
-        return sprintf("bit %d,%s", bit, gon(r));
+        return sprintf("bit %d,%s", bit, getOp(r));
       }
     },
     "res y,r[z]": {
@@ -444,7 +444,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
           h.incClockOperand(r, {reg: 8, ind: 16});
       },
       ds: function(mem, pc, bit, r) {
-        return sprintf("res %d,%s", bit, gon(r));
+        return sprintf("res %d,%s", bit, getOp(r));
       }
     },
     "set y,r[z]": {
@@ -456,7 +456,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
           h.incClockOperand(r, {reg: 8, ind: 16});
       },
       ds: function(mem, pc, bit, r) {
-        return sprintf("set %d,%s", bit, gon(r));
+        return sprintf("set %d,%s", bit, getOp(r));
       }
     }
   };
