@@ -3,7 +3,21 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
 
   var getOp = h.getOperatorName;
 
-  var ops = {
+  // Each instruction has up to three keys:
+  // op: If the instruction takes no additional arguments,
+  //     op is a string for a Javascript function to
+  //     compute the operation.
+  //     If the instruction takes additional arguments,
+  //     then op is a function that returns a string
+  //     for a Javascript function to compute the operation.
+  // ds: A function that takes the current memory image
+  //     and program counter, as well as any other arguments
+  //     required by the instruction.
+  // len: An optional value for the length of the instruction,
+  //      including all immediate data. For the convenience
+  //      of the disassembler; instructions should handle 
+  //      incrementing the program counter manually.
+  var instrs = {
     // 8-bit loads
     "ld r[y],r[z]": {
       op: function(r1, r2) {
@@ -412,7 +426,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     }
   };
 
-  var cbOps = {
+  var cbInstrs = {
     // cb-prefixed operations
     "rot y,r[z]": {
       op: function(rot, r) {
@@ -462,7 +476,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
   };
 
   return {
-    ops: ops,
-    cbOps: cbOps
+    instrs: instrs,
+    cbInstrs: cbInstrs
   };
 });

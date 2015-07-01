@@ -45,8 +45,8 @@ define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) 
       this.iflags = 0;
       this.ienables = 0;
 
-      this.ops = isa.generateOps();
-      this.cbops = isa.generateCBOps();
+      this.ops = isa.generateInstrs();
+      this.cbops = isa.generateCBInstrs();
 
       this.state = states.NORMAL;
     },
