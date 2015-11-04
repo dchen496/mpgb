@@ -191,7 +191,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
 
         case 0x00: // P1/JOYP
           return this.gbc.joypad.joypOp(read, value);
-          
+
         case 0x01: // SB
           return this.gbc.serial.sbOp(read, value);
         case 0x02: // SC
@@ -242,7 +242,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
     _ieOp: function(read, value) {
       return this.gbc.cpu.ienableOp(read, value);
     },
-    
+
     dump: function(min, max, highlight) {
       var res = [];
       min = Math.floor(min / 4);
@@ -250,7 +250,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       for(var i = min; i <= max; i++) {
         var addr = (i*4) & 0xffff;
         var s = addr == (highlight - highlight % 4) ? '*' : ' ';
-        res.push(sprintf("%s%04x: %04x %04x", 
+        res.push(sprintf("%s%04x: %04x %04x",
               s, addr, this.read16(addr), this.read16(addr+2)));
       }
       return res.join("\n");

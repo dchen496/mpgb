@@ -1,6 +1,6 @@
 define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
   "use strict"
-  
+
   var MODE2_CLOCKS = 80;
   var MODE3_CLOCKS = 172;
   var HBLANK_CLOCKS = 204;
@@ -383,7 +383,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       var shift = 7 - xoff;
       var lsb = (pixel0 >> shift) & 1;
       var msb = (pixel1 >> shift) & 1;
-      return (msb << 1) | lsb; 
+      return (msb << 1) | lsb;
     },
 
     _preprocessOAM: function() {
@@ -407,7 +407,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
         return a.y - b.y;
       });
     },
-    
+
     _getLineSprites: function(line) {
       // TODO cache visible sprites index
       this._preprocessOAM();
@@ -442,7 +442,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
 
     dump: function() {
       return sprintf("bgen: %d spen: %d spsz: %d bgts: %d tdat: %d wien: %d wits: %d en: %d ien: %02x\n",
-            this.bgDisplay, this.spriteEnable, this.spriteSize, this.bgTileMapSelect, 
+            this.bgDisplay, this.spriteEnable, this.spriteSize, this.bgTileMapSelect,
             this.tileDataSelect, this.windowEnable, this.windowTileMapSelect, this.enable, this.ienables) +
           sprintf("scy: %02x scx: %02x ly: %02x lyc: %02x wy: %02x wx: %02x bgp: %02x obp0: %02x obp1: %02x",
             this.scy, this.scx, this.ly, this.lyc, this.wy, this.wx, this.bgp, this.obp0, this.obp1);

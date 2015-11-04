@@ -15,7 +15,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
   //     required by the instruction.
   // len: An optional value for the length of the instruction,
   //      including all immediate data. For the convenience
-  //      of the disassembler; instructions should handle 
+  //      of the disassembler; instructions should handle
   //      incrementing the program counter manually.
   var instrs = {
     // 8-bit loads
@@ -132,8 +132,8 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       len: 3
     },
     "ld (nn),sp": {
-      op: h.input16({reg16: "sp"}, "v") + 
-        h.output16({ima16: 1}, "v") + 
+      op: h.input16({reg16: "sp"}, "v") +
+        h.output16({ima16: 1}, "v") +
         h.incPc(3) + h.incClock(20),
       ds: function(mem, pc) {
         return sprintf("ld (#%04x),sp", mem.read16(pc+1));
@@ -141,8 +141,8 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       len: 3
     },
     "ld sp,hl": {
-      op: h.input16({reg16: "hl"}, "tmp") + 
-        h.output16({reg16: "sp"}, "tmp") + 
+      op: h.input16({reg16: "hl"}, "tmp") +
+        h.output16({reg16: "sp"}, "tmp") +
         h.incPc(1) + h.incClock(8)
     },
     "push rp2[p]": {
@@ -211,7 +211,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
         "tmp &= 0xff;" +
         h.setFlag("z", "tmp == 0") +
         h.output8({reg: "a"}, "tmp") +
-        h.incPc(1) + 
+        h.incPc(1) +
         h.incClock(4)
     },
     "cpl": {
@@ -318,7 +318,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
       op: "this._halt();" + h.incPc(1) + h.incClock(0)
     },
     "stop": {
-      op: "this._stop();" + h.incPc(2) + h.incClock(0), 
+      op: "this._stop();" + h.incPc(2) + h.incClock(0),
       // 2 because opcode is 0x10 0x00?
       len: 2
     },
@@ -342,7 +342,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     },
     "jp cc[y],nn": {
       op: function(cc) {
-        return h.cond(cc, 
+        return h.cond(cc,
           h.jp({imm16: 1}) + h.incClock(16),
           h.incPc(3) + h.incClock(12)
         );
@@ -363,7 +363,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     },
     "jr cc[y-4],d": {
       op: function(cc) {
-        return h.cond(cc, 
+        return h.cond(cc,
           h.jr({imm: 1}) + h.incClock(12),
           h.incPc(2) + h.incClock(8)
         );
@@ -384,7 +384,7 @@ define(['sprintf', './cpu-helpers'], function(sprintf, h) {
     },
     "call cc[y],nn": {
       op: function(cc) {
-        return h.cond(cc, 
+        return h.cond(cc,
           h.call({imm16: 1}) + h.incClock(24),
           h.incPc(3) + h.incClock(12)
         );

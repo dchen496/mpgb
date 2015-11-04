@@ -117,7 +117,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       if(this.mode) {
         addr += this.upperBank * 0x2000;
       }
-      
+
       if(read) {
         return this.ramImage[addr];
       }
@@ -128,7 +128,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
     },
     dump: function() {
       if(this.mode) {
-        return sprintf("MBC1 mode: 1 romBank: %d ramBank: %d ramEnable: %d", 
+        return sprintf("MBC1 mode: 1 romBank: %d ramBank: %d ramEnable: %d",
             this.lowerBank, this.upperBank, this.ramEnable);
       } else {
         return sprintf("MBC1 mode: 0 romBank: %d ramBank: 0 ramEnable: %d",
@@ -144,7 +144,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       this.romImage = romImage;
     },
     romOp: function(addr, read, value) {
-      
+
     },
     ramOp: function(add, read, value) {
     },
@@ -207,7 +207,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       throw("MBC3 persist unimplemented");
     },
     dump: function() {
-      return sprintf("MBC3 romBank: %d ramBank: %d ramEnable: %d", 
+      return sprintf("MBC3 romBank: %d ramBank: %d ramEnable: %d",
           this.romBank, this.ramBank, this.ramEnable);
     }
   }
@@ -219,7 +219,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       this.romImage = romImage;
     },
     romOp: function(addr, read, value) {
-      
+
     },
     ramOp: function(add, read, value) {
     },
@@ -276,7 +276,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
       if(this.mode) {
         addr += this.ramBank * 0x2000;
       }
-      
+
       if(read) {
         return this.ramImage[addr];
       }
@@ -287,7 +287,7 @@ define(['sprintf', './event-manager'], function(sprintf, evm) {
     },
     dump: function() {
       if(this.mode) {
-        return sprintf("MBC1 mode: 1 romBank: %d ramBank: %d ramEnable: %d", 
+        return sprintf("MBC1 mode: 1 romBank: %d ramBank: %d ramEnable: %d",
             this.lowerBank, this.upperBank, this.ramEnable);
       } else {
         return sprintf("MBC1 mode: 0 romBank: %d ramBank: 0 ramEnable: %d",

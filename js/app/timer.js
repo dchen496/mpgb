@@ -92,7 +92,7 @@ define(['sprintf', './cpu', './event-manager'], function(sprintf, cpu, evm) {
       return sprintf("tima: %02x timaStart: %d timaBase: %02x\n",
           this.timaOp(true, 0), this.timaStart, this.timaBase) +
         sprintf("tma: %02x div: %02x started: %d cshift: %d", this.tmaOp(true,
-              0), this.divOp(true, 0), this.started, shifts[this.clockSelect]); 
+              0), this.divOp(true, 0), this.started, shifts[this.clockSelect]);
     }
   };
 

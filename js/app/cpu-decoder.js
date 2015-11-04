@@ -2,11 +2,11 @@ define(function() {
   "use strict"
   // operand tables
   var r = [ // r
-    {reg: "b"}, 
-    {reg: "c"}, 
-    {reg: "d"}, 
-    {reg: "e"}, 
-    {reg: "h"}, 
+    {reg: "b"},
+    {reg: "c"},
+    {reg: "d"},
+    {reg: "e"},
+    {reg: "h"},
     {reg: "l"},
     {ind: "hl"},
     {reg: "a"}
@@ -46,7 +46,7 @@ define(function() {
     }
   }
   x0z[1] = function(y, p, q) {
-    if(q == 0) { 
+    if(q == 0) {
       return ["ld rp[p],nn", rp[p]];
     } else {
       return ["add hl,rp[p]", rp[p]];
@@ -77,9 +77,9 @@ define(function() {
     }
   }
   x0z[3] = function(y, p, q) {
-    if(q == 0) { 
+    if(q == 0) {
       return ["inc rp[p]", rp[p]];
-    } else { 
+    } else {
       return ["dec rp[p]", rp[p]];
     }
   }
@@ -217,7 +217,7 @@ define(function() {
   x3z[6] = function(y, p, q) {
     return ["alu[y] n", alu[y]];
   }
-  x3z[7] = function(y, p, q) { 
+  x3z[7] = function(y, p, q) {
     return ["rst y*8", y*8];
   }
 

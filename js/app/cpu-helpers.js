@@ -5,7 +5,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     // loads
     ld: function(dest, src) {
       return this.input8(src, "tmp") +
-        this.output8(dest, "tmp") + 
+        this.output8(dest, "tmp") +
         this.incPcOperand([src, dest]);
     },
     ldInc16: function(operand, increment) {
@@ -48,12 +48,12 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         this.output16({ind16: "sp"}, "ret");
     },
     call: function(operand) {
-      return this.pushPc(3) + 
+      return this.pushPc(3) +
         this.input16(operand, "loc") +
         "this.pc = loc;";
     },
     rst: function(addr) {
-      return this.pushPc(1) + 
+      return this.pushPc(1) +
         sprintf("this.pc = %d;", addr) + this.incClock(16);
     },
     ret: function() {
@@ -65,18 +65,18 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
       if(decoder.tables.alu.indexOf(operator) < 0) {
         throw("bad alu op " + operator);
       }
-      return this[operator](operand) + 
-        this.setFlag("z", "tmp == 0") + 
+      return this[operator](operand) +
+        this.setFlag("z", "tmp == 0") +
         this.incPcOperand([operand]) +
         this.incClockOperand(operand, this.aluClocks);
     },
     aluClocks: {
-      imm: 8, 
+      imm: 8,
       reg: 4,
       ind: 8
     },
     add: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         this.setFlag("h", "(this.a & 0xf) + (tmp & 0xf) > 0xf") +
         "tmp += this.a;" +
         "this.fc = tmp >> 8;" +
@@ -85,7 +85,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     sub: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         this.setFlag("h", "(this.a & 0xf) - (tmp & 0xf) < 0") +
         "tmp = this.a - tmp;" +
         "if(tmp < 0) { this.fc = 1; tmp += 0x100; } else { this.fc = 0; }" +
@@ -93,7 +93,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     adc: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         this.setFlag("h", "(this.a & 0xf) + (tmp & 0xf) + this.fc > 0xf") +
         "tmp += this.a + this.fc;" +
         "this.fc = tmp >> 8;" +
@@ -102,7 +102,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     sbc: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         this.setFlag("h", "(this.a & 0xf) - (tmp & 0xf) - this.fc < 0") +
         "tmp = this.a - tmp - this.fc;" +
         "if(tmp < 0) { this.fc = 1; tmp += 0x100; } else { this.fc = 0; }" +
@@ -110,7 +110,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     and: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         "tmp &= this.a;" +
         "this.fh = 1;" +
         "this.fc = 0;" +
@@ -118,7 +118,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     xor: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         "tmp ^= this.a;" +
         "this.fh = 0;" +
         "this.fc = 0;" +
@@ -126,7 +126,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     or: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         "tmp |= this.a;" +
         "this.fh = 0;" +
         "this.fc = 0;" +
@@ -134,7 +134,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         "this.a = tmp;";
     },
     cp: function(operand) {
-      return this.input8(operand, "tmp") + 
+      return this.input8(operand, "tmp") +
         this.setFlag("h", "(this.a & 0xf) - (tmp & 0xf) < 0") +
         "tmp = this.a - tmp;" +
         "if(tmp < 0) { this.fc = 1; tmp += 0x100; } else { this.fc = 0; }" +
@@ -180,7 +180,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     },
     addToSp: function(dest, src) {
       return this.input8(src, "tmp") +
-        this.input16({reg16: "sp"}, "sp") + 
+        this.input16({reg16: "sp"}, "sp") +
         // h and c flags set using unsigned addition (ie. before sign extension)
         //this.setFlag("h", "(sp & 0xfff) + (tmp & 0xfff) > 0xfff") +
         this.setFlag("h", "(sp & 0xf) + (tmp & 0xf) > 0xf") +
@@ -188,7 +188,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         this.setFlag("c", "(sp & 0xff) + tmp > 0xff") +
         "tmp = (tmp & 0x80) ? (tmp - 0x100) : tmp;" + // sign extension
         "sp = (sp + tmp) & 0xffff;" +
-        "this.fz = 0;" + 
+        "this.fz = 0;" +
         "this.fn = 0;" +
         this.output16(dest, "sp") +
         this.incPcOperand([dest, src]);
@@ -210,7 +210,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     rotOp: function(operator, operand) {
       var rots = ["rlc", "rrc", "rl", "rr", "sla", "sra", "swap", "srl"];
       // flag behavior of rlc a and rlca (and similar) are different
-      return this[rots[operator]](operand) + 
+      return this[rots[operator]](operand) +
         this.setFlag("z", "tmp == 0") +
         this.incPc(2) +
         this.incClockOperand(operand, this.rotClocks);
@@ -315,7 +315,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         return sprintf("var %s = this.%s;", name, src.reg);
       }
       if("ind" in src) {
-        return sprintf("%s var %s = this.memory.read(%s_ind_addr);", 
+        return sprintf("%s var %s = this.memory.read(%s_ind_addr);",
             this.input16({reg16: src.ind}, name + "_ind_addr"), name, name);
       }
       throw("Invalid 8-bit src");
@@ -340,7 +340,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         return sprintf("var %s = this.memory.read16(this.memory.read16(this.pc + %d));", name, src.ima16);
       }
       if("ind16" in src) {
-        return sprintf("%s var %s = this.memory.read16(%s_ind16_addr);", 
+        return sprintf("%s var %s = this.memory.read16(%s_ind16_addr);",
             this.input16({reg16: src.ind16}, name + "_ind16_addr"), name, name);
       }
       throw("Invalid 16-bit src");
@@ -356,7 +356,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         return sprintf("this.%s = %s;", dest.reg, name);
       }
       if("ind" in dest) {
-        return sprintf("%s this.memory.write(%s_ind_addr, %s);", 
+        return sprintf("%s this.memory.write(%s_ind_addr, %s);",
             this.input16({reg16: dest.ind}, name + "_ind_addr"), name, name);
       }
       throw("Invalid 8-bit dest");
@@ -377,7 +377,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
         return sprintf("this.memory.write16(this.memory.read16(this.pc + %d), %s);", dest.ima16, name);
       }
       if("ind16" in dest) {
-        return sprintf("%s this.memory.write16(%s_ind16_addr, %s);", 
+        return sprintf("%s this.memory.write16(%s_ind16_addr, %s);",
             this.input16({reg16: dest.ind16}, name + "_ind16_addr"), name, name);
       }
       throw("Invalid 16-bit dest");
@@ -406,7 +406,7 @@ define(['sprintf', './cpu-decoder'], function(sprintf, decoder) {
     type: function(operand) {
       return Object.keys(operand)[0];
     },
-    getOperatorName: function(reg) { 
+    getOperatorName: function(reg) {
       if(reg.reg != null) {
         return reg.reg;
       }

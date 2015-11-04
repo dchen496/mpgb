@@ -1,4 +1,4 @@
-define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'], 
+define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'],
     function($, gbcLink, joypad, roms) {
   "use strict"
 
@@ -47,7 +47,7 @@ define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'],
     for(var i in lcds) {
       var canvas = lcds[i];
       var ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height); 
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   }
 

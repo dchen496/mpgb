@@ -137,8 +137,8 @@ define(['./cpu-isa', './event-manager', 'sprintf'], function(isa, evm, sprintf) 
     },
     _setF: function(value) {
       this.fz = (value >> 7) & 1;
-      this.fn = (value >> 6) & 1; 
-      this.fh = (value >> 5) & 1; 
+      this.fn = (value >> 6) & 1;
+      this.fh = (value >> 5) & 1;
       this.fc = (value >> 4) & 1;
     },
     _halt: function() {

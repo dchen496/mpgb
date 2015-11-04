@@ -1,5 +1,5 @@
 define(['sprintf'], function(sprintf) {
-  "use strict" 
+  "use strict"
 
   var CLOCK_MAX = Math.pow(2, 53);
 
@@ -33,7 +33,7 @@ define(['sprintf'], function(sprintf) {
       return this.nextEventCache;
     },
     nextClock: function() {
-      if(this.nextValid) 
+      if(this.nextValid)
         return this.nextClockCache;
       var bestClock = CLOCK_MAX;
       var ev = -1;

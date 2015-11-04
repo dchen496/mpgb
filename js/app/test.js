@@ -4,7 +4,7 @@
   var paths = names.map(function(s) { return './' + s });
 
   define(paths, function() {
-    var modules = arguments; 
+    var modules = arguments;
     return function() {
       var success = true;
       var exp = null;

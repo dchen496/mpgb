@@ -1,4 +1,4 @@
-define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie'], 
+define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie'],
     function($, gbc, cpuDisasm, sprintf, roms) {
 
   function main() {
@@ -25,7 +25,7 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie']
   function romSelected(path) {
     var canvas = $("#lcd")[0];
     var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height); 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     var req = new XMLHttpRequest();
     req.open('get', 'roms/' + path, true);
     req.responseType = 'arraybuffer';
@@ -53,7 +53,7 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie']
 
     $("#setmemaddr").click(updateMemory.bind(this, gameboy));
   }
-  
+
   function updateMemory(gameboy) {
     var addr = parseInt($("#memaddr")[0].value, 16);
     if(isNaN(addr)) {
@@ -77,13 +77,13 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie']
 
   function updateLog(gameboy, clocks, execTime) {
     $("#stats").text(sprintf("wall: %.2fs %.2f M/s delta: %d clock: %d time: %.2fs",
-      execTime / 1000.0, clocks / execTime / 1000.0, 
+      execTime / 1000.0, clocks / execTime / 1000.0,
       clocks, gameboy.clock, gameboy.clock / Math.pow(2.0,22.0)));
 
     $("#cpu").text(gameboy.cpu.dump());
 
     var disasm = cpuDisasm.create(gameboy.memory);
-    var disasmText = disasm.disasmRangePretty(gameboy.cpu.pc - 4, 
+    var disasmText = disasm.disasmRangePretty(gameboy.cpu.pc - 4,
         gameboy.cpu.pc + 8, gameboy.cpu.pc);
     $("#disasm").text(disasmText);
 

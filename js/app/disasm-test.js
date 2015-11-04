@@ -1,5 +1,5 @@
-define(['jquery', 'sprintf', './cpu-disasm', './test/memory', 
-    './roms', 'jquery-cookie'], 
+define(['jquery', 'sprintf', './cpu-disasm', './test/memory',
+    './roms', 'jquery-cookie'],
 function($, sprintf, cpuDisasm, memory, roms) {
 
   function main() {
@@ -23,7 +23,7 @@ function($, sprintf, cpuDisasm, memory, roms) {
     $.cookie("romPath", path, {expires: 1000});
     romSelected(path);
   }
-  
+
   function romSelected(path) {
     var req = new XMLHttpRequest();
     req.open('get', 'roms/' + path, true);
