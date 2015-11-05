@@ -2,14 +2,14 @@ define(['./gbc', './cpu', './event-manager'], function(gbc, cpu, evm) {
   "use strict"
 
   var proto = {
-    init: function(romImage, frameCallback1, frameCallback2) {
+    init: function(romImage, frameCallback1, frameCallback2, enableDrawing1, enableDrawing2) {
       var v = this;
       this.gbc1 = gbc.create(romImage, function(gb, fb) {
         frameCallback1(v, gb, fb);
-      });
+      }, enableDrawing1);
       this.gbc2 = gbc.create(romImage, function(gb, fb) {
         frameCallback2(v, gb, fb);
-      });
+      }, enableDrawing2);
       this.serial1 = this.gbc1.serial;
       this.serial2 = this.gbc2.serial;
       this.run = false;

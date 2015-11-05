@@ -14,7 +14,7 @@ define(function(require) {
   var CLOCKS_PER_FRAME = Math.round(CLOCKS_PER_SEC / 60);
 
   var proto = {
-    init: function(romImage, frameCallback) {
+    init: function(romImage, frameCallback, enableDrawing) {
       this.clock = 0;
 
       this.evm = evm.create();
@@ -22,7 +22,7 @@ define(function(require) {
       this.cpu = cpu.create(this.memory, this.evm);
       this.cartridge = cartridge.create(this, romImage);
       this.timer = timer.create(this.cpu, this.evm);
-      this.video = video.create(this, frameCallback);
+      this.video = video.create(this, frameCallback, enableDrawing);
       this.joypad = joypad.create(this.cpu);
       this.sound = sound.create();
       this.serial = serial.create(this, this.cpu, this.evm);
@@ -97,9 +97,9 @@ define(function(require) {
   }
 
   return {
-    create: function(romImage, frameCallback) {
+    create: function(romImage, frameCallback, enableDrawing) {
       var gbc = Object.create(proto);
-      gbc.init(romImage, frameCallback);
+      gbc.init(romImage, frameCallback, enableDrawing);
       return gbc;
     },
     test: function() {

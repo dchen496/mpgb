@@ -36,7 +36,7 @@ define(['jquery', './gbc', './cpu-disasm', 'sprintf', './roms', 'jquery-cookie']
 
   function romLoaded(arrayBuffer) {
     var romImage = new Uint8Array(arrayBuffer);
-    var gameboy = gbc.create(romImage, frameCallback);
+    var gameboy = gbc.create(romImage, frameCallback, true);
     gameboy.boot();
     updateLog(gameboy, 0, 0);
 

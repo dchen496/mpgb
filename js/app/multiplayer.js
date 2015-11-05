@@ -61,7 +61,7 @@ define(['jquery', './gbc-link', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
 
-    gameboyLink = gbcLink.create(romImage, frameCallback1, frameCallback2);
+    gameboyLink = gbcLink.create(romImage, frameCallback1, frameCallback2, true, true);
     gameboyLink.boot();
 
     resume(59.7275);

@@ -53,7 +53,7 @@ define(['jquery', './gbc', './joypad', './roms', 'jquery-cookie'],
       clearInterval(interval);
     }
 
-    gameboy = gbc.create(romImage, frameCallback);
+    gameboy = gbc.create(romImage, frameCallback, true);
     gameboy.boot();
 
     resume(59.7275);
