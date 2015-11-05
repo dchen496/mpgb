@@ -13,8 +13,9 @@ type AckCreate struct {
 }
 
 type AckJoin struct {
-	Error  error `json:"error"`
-	Player int   `json:"player"`
+	Error    error  `json:"error"`
+	Player   int    `json:"player"`
+	RomImage string `json:"rom_image"`
 }
 
 type Start struct {
@@ -31,6 +32,8 @@ type Finish struct {
 
 // client -> server messages
 type Create struct {
+	Name     string `json:"name"`
+	RomImage string `json:"rom_image"`
 }
 
 type Join struct {

@@ -8,8 +8,10 @@ import (
 )
 
 type game struct {
-	id          int64
-	players     [2]*websocket.Conn
+	id       int64
+	players  [2]*websocket.Conn
+	romImage string
+
 	joinCh      chan joinRequest
 	updateCh    chan updateRequest
 	gameStarted bool
@@ -36,7 +38,7 @@ var games map[int64]*game
 
 const idMax = (1 << 53) // Javascript can safely represent integers up to 2^53 - 1
 
-func createGame(conn *websocket.Conn) (g *game, playerIdx int) {
+func createGame(conn *websocket.Conn, msg *api.Create) (g *game, playerIdx int) {
 	playerIdx = 0
 
 	for {
@@ -45,6 +47,7 @@ func createGame(conn *websocket.Conn) (g *game, playerIdx int) {
 		if !found {
 			g = &game{
 				id:       id,
+				romImage: msg.RomImage,
 				joinCh:   make(chan joinRequest),
 				updateCh: make(chan updateRequest),
 			}
@@ -58,10 +61,10 @@ func createGame(conn *websocket.Conn) (g *game, playerIdx int) {
 	return
 }
 
-func joinGame(conn *websocket.Conn, id int64) (g *game, playerIdx int, err error) {
-	g, ok := games[id]
+func joinGame(conn *websocket.Conn, msg *api.Join) (g *game, playerIdx int, err error) {
+	g, ok := games[msg.Id]
 	if !ok {
-		err = fmt.Errorf("Game %d not found.", id)
+		err = fmt.Errorf("Game %d not found.", msg.Id)
 		return
 	}
 	req := joinRequest{
@@ -87,6 +90,10 @@ func (g *game) run() {
 		select {
 		case join := <-g.joinCh:
 			// join game
+			if g.gameStarted {
+				join.resultCh <- joinResult{err: fmt.Errorf("Game %d has already started, can't join.", g.id)}
+				continue
+			}
 			if g.players[1] != nil {
 				join.resultCh <- joinResult{err: fmt.Errorf("Game %d is full, can't join.", g.id)}
 				continue
@@ -95,6 +102,7 @@ func (g *game) run() {
 			join.resultCh <- joinResult{playerIdx: 1}
 
 			// both players joined, start
+			g.gameStarted = true
 			err := g.broadcastMsg(api.Start{})
 			if err != nil {
 				return

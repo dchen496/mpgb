@@ -59,14 +59,18 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch msg := msg.(type) {
 	case *api.Create:
-		g, playerIdx = createGame(conn)
+		g, playerIdx = createGame(conn, msg)
 		err = writeApiMessage(conn, api.AckCreate{Id: g.id, Player: playerIdx})
 		if err != nil {
 			return
 		}
 	case *api.Join:
-		g, playerIdx, joinErr = joinGame(conn, msg.Id)
-		err = writeApiMessage(conn, api.AckJoin{Error: joinErr, Player: playerIdx})
+		g, playerIdx, joinErr = joinGame(conn, msg)
+		err = writeApiMessage(conn, api.AckJoin{
+			Error:    joinErr,
+			Player:   playerIdx,
+			RomImage: g.romImage,
+		})
 		if err != nil {
 			return
 		}
