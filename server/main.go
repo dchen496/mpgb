@@ -1,34 +1,19 @@
-package main
+package server
 
 import (
 	"fmt"
 	"github.com/dchen496/mpgb/api"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 )
-
-func main() {
-	r := mux.NewRouter()
-
-	// Everything is a WebSockets RPC for simplicity
-	r.HandleFunc("/ws", wsHandler)
-
-	// Serve static files
-	r.PathPrefix("/js").Handler(http.FileServer(http.Dir("./js/")))
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
-
-	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
-}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+func WsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
