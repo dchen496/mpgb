@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>GB Linked Player</title>
+    <script data-main="js/linkedplayer.js" src="js/require.js"></script>
+    <style type="text/css">
+      #lcd {
+        width: 640px;
+        height: 576px;
+      }
+      #create-panel, #join-panel, #play-panel, #status-panel {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+  <div id="create-panel">
+    <div>
+      <h4>Create Game</h4>
+      <select id="rom-picker"></select>
+      <button id="create-submit">Create</button>
+    </div>
+  </div>
+  <div id="join-panel">
+    <div>
+      <h4>Join Game</h4>
+      <p id="join-msg"></p>
+      <button id="join-submit">Join</button>
+    </div>
+  </div>
+  <div id="status-panel">
+    <h4 id="status-banner"></h4>
+    <div id="status"></div>
+    Link to this game: <a id="game-link" target="_blank"></div>
+  </div>
+  <div id="play-panel">
+    <canvas id="lcd" width="1280" height="1152"></canvas>
+  </div>
+  </body>
+</html>

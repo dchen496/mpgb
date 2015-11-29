@@ -82,9 +82,9 @@ define(['./gbc', './cpu', './event-manager'], function(gbc, cpu, evm) {
   };
 
   return {
-    create: function(romImage, frameCallback1, frameCallback2) {
+    create: function(romImage, frameCallback1, frameCallback2, enableDrawing1, enableDrawing2) {
       var gbcLink = Object.create(proto);
-      gbcLink.init(romImage, frameCallback1, frameCallback2);
+      gbcLink.init(romImage, frameCallback1, frameCallback2, enableDrawing1, enableDrawing2);
       return gbcLink;
     }
   }

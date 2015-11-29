@@ -13,9 +13,9 @@ type AckCreate struct {
 }
 
 type AckJoin struct {
-	Error    error  `json:"error"`
-	Player   int    `json:"player"`
-	RomImage string `json:"rom_image"`
+	Error    *string `json:"error"`
+	Player   int     `json:"player"`
+	RomImage *string `json:"rom_image"`
 }
 
 type Start struct {

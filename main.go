@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/dchen496/mpgb/server"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 )
 
@@ -18,5 +19,8 @@ func main() {
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
+	addr := ":8080"
+
+	log.Printf("listening on %s\n", addr)
+	http.ListenAndServe(addr, nil)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dchen496/mpgb/api"
 	"github.com/gorilla/websocket"
+	"log"
 	"math/rand"
 )
 
@@ -19,12 +20,8 @@ type game struct {
 
 type joinRequest struct {
 	conn     *websocket.Conn
-	resultCh chan joinResult
-}
-
-type joinResult struct {
-	err       error
-	playerIdx int
+	token    int64
+	resultCh chan error
 }
 
 type updateRequest struct {
@@ -34,13 +31,11 @@ type updateRequest struct {
 	present  bool
 }
 
-var games map[int64]*game
+var games = map[int64]*game{}
 
 const idMax = (1 << 53) // Javascript can safely represent integers up to 2^53 - 1
 
-func createGame(conn *websocket.Conn, msg *api.Create) (g *game, playerIdx int) {
-	playerIdx = 0
-
+func createGame(conn *websocket.Conn, msg *api.Create, token int64) (g *game, err error) {
 	for {
 		id := rand.Int63n(idMax)
 		_, found := games[id]
@@ -57,11 +52,17 @@ func createGame(conn *websocket.Conn, msg *api.Create) (g *game, playerIdx int) 
 		}
 	}
 
+	err = writeApiMessage(conn, api.AckCreate{Id: g.id, Player: 0}, token)
+	if err != nil {
+		return
+	}
+
 	go g.run()
+	log.Println("Created game", g.id)
 	return
 }
 
-func joinGame(conn *websocket.Conn, msg *api.Join) (g *game, playerIdx int, err error) {
+func joinGame(conn *websocket.Conn, msg *api.Join, token int64) (g *game, err error) {
 	g, ok := games[msg.Id]
 	if !ok {
 		err = fmt.Errorf("Game %d not found.", msg.Id)
@@ -69,19 +70,21 @@ func joinGame(conn *websocket.Conn, msg *api.Join) (g *game, playerIdx int, err 
 	}
 	req := joinRequest{
 		conn:     conn,
-		resultCh: make(chan joinResult),
+		token:    token,
+		resultCh: make(chan error),
 	}
 
 	g.joinCh <- req
-	result := <-req.resultCh
-	playerIdx = result.playerIdx
-	err = result.err
+	err = <-req.resultCh
+	if err == nil {
+		log.Println("Joined game", msg.Id)
+	}
 	return
 }
 
 func (g *game) run() {
 	var updates [2]updateRequest
-	var tick int64
+	var tick int64 = 0
 
 	defer g.cleanup()
 
@@ -90,16 +93,23 @@ func (g *game) run() {
 		select {
 		case join := <-g.joinCh:
 			// join game
+			joinErr := ""
 			if g.gameStarted {
-				join.resultCh <- joinResult{err: fmt.Errorf("Game %d has already started, can't join.", g.id)}
+				joinErr = fmt.Sprintf("Game %d has already started, can't join.", g.id)
+			} else if g.players[1] != nil {
+				joinErr = fmt.Sprintf("Game %d is full, can't join.", g.id)
+			}
+			if joinErr != "" {
+				writeApiMessage(join.conn, api.AckJoin{Error: &joinErr}, join.token)
 				continue
 			}
-			if g.players[1] != nil {
-				join.resultCh <- joinResult{err: fmt.Errorf("Game %d is full, can't join.", g.id)}
-				continue
-			}
+
 			g.players[1] = join.conn
-			join.resultCh <- joinResult{playerIdx: 1}
+			join.resultCh <- writeApiMessage(join.conn, api.AckJoin{
+				Error:    nil,
+				Player:   1,
+				RomImage: &g.romImage,
+			}, join.token)
 
 			// both players joined, start
 			g.gameStarted = true
@@ -133,6 +143,7 @@ func (g *game) run() {
 				if err != nil {
 					return
 				}
+				tick++
 			}
 		}
 	}
@@ -159,7 +170,7 @@ func (g *game) broadcastMsg(msg interface{}) (err error) {
 	for _, player := range g.players {
 		var merr error
 		if player != nil {
-			merr = writeApiMessage(player, msg)
+			merr = writeApiMessage(player, msg, 0)
 		}
 		if merr != nil {
 			err = merr

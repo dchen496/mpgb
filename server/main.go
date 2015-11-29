@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/dchen496/mpgb/api"
 	"github.com/gorilla/websocket"
 	"log"
@@ -25,37 +24,29 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 		ApiVersion: api.ApiVersion,
 	}
 
-	err = writeApiMessage(conn, sinfo)
+	err = writeApiMessage(conn, sinfo, 0)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	// wait for client to either create a game or join a game
-	msg, err := readApiMessage(conn)
+	msg, token, err := readApiMessage(conn)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	var g *game
-	var playerIdx int
-	var joinErr error
 
 	switch msg := msg.(type) {
 	case *api.Create:
-		g, playerIdx = createGame(conn, msg)
-		err = writeApiMessage(conn, api.AckCreate{Id: g.id, Player: playerIdx})
+		g, err = createGame(conn, msg, token)
 		if err != nil {
 			return
 		}
 	case *api.Join:
-		g, playerIdx, joinErr = joinGame(conn, msg)
-		err = writeApiMessage(conn, api.AckJoin{
-			Error:    joinErr,
-			Player:   playerIdx,
-			RomImage: g.romImage,
-		})
+		g, err = joinGame(conn, msg, token)
 		if err != nil {
 			return
 		}
@@ -65,7 +56,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		msg, err := readApiMessage(conn)
+		msg, _, err := readApiMessage(conn)
 		if err != nil {
 			log.Println(err)
 			return
@@ -77,25 +68,4 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Unexpected message type.")
 		}
 	}
-}
-
-func writeApiMessage(conn *websocket.Conn, msg interface{}) (err error) {
-	enc, err := api.EncodeMessage(msg)
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.TextMessage, enc)
-}
-
-func readApiMessage(conn *websocket.Conn) (msg interface{}, err error) {
-	messageType, p, err := conn.ReadMessage()
-	if err != nil {
-		return
-	}
-	if messageType != websocket.TextMessage {
-		err = fmt.Errorf("Unexpected websocket message type.")
-		return
-	}
-	msg, err = api.DecodeMessage(p)
-	return
 }
