@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const joinTimeout = 10 * time.Second
+const joinTimeout = 10 * time.Minute
 const readTimeout = 10 * time.Second
 const syncTimeout = 2 * time.Second
 const writeTimeout = 2 * time.Second
