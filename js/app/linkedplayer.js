@@ -249,6 +249,8 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
   }
 
   function finish() {
+    $('#status').text('Disconnected. Refresh to start another game.');
+    $('#status').css('color', 'red');
   }
 
   function sendUpdate() {
