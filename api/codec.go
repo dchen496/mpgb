@@ -50,6 +50,8 @@ func EncodeMessage(in interface{}, token int64) (out []byte, err error) {
 		m.Type = "start"
 	case Sync:
 		m.Type = "sync"
+	case Finish:
+		m.Type = "finish"
 	default:
 		err = fmt.Errorf("Unrecognized message type.")
 		return

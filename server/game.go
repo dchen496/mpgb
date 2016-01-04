@@ -6,6 +6,8 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
+	"sync"
+	"time"
 )
 
 type game struct {
@@ -16,6 +18,8 @@ type game struct {
 	joinCh      chan joinRequest
 	updateCh    chan updateRequest
 	gameStarted bool
+
+	timeout *time.Timer
 }
 
 type joinRequest struct {
@@ -31,39 +35,47 @@ type updateRequest struct {
 	present  bool
 }
 
+var gamesLock = sync.Mutex{}
 var games = map[int64]*game{}
 
 const idMax = (1 << 53) // Javascript can safely represent integers up to 2^53 - 1
 
 func createGame(conn *websocket.Conn, msg *api.Create, token int64) (g *game, err error) {
-	for {
-		id := rand.Int63n(idMax)
-		_, found := games[id]
-		if !found {
-			g = &game{
-				id:       id,
-				romImage: msg.RomImage,
-				joinCh:   make(chan joinRequest),
-				updateCh: make(chan updateRequest),
+	func() {
+		gamesLock.Lock()
+		defer gamesLock.Unlock()
+
+		for {
+			id := rand.Int63n(idMax)
+			_, found := games[id]
+			if !found {
+				g = &game{
+					id:       id,
+					romImage: msg.RomImage,
+					joinCh:   make(chan joinRequest),
+					updateCh: make(chan updateRequest),
+					timeout:  time.NewTimer(joinTimeout),
+				}
+				g.players[0] = conn
+				games[id] = g
+				break
 			}
-			g.players[0] = conn
-			games[id] = g
-			break
 		}
-	}
+	}()
 
-	err = writeApiMessage(conn, api.AckCreate{Id: g.id, Player: 0}, token)
-	if err != nil {
-		return
-	}
-
-	go g.run()
 	log.Println("Created game", g.id)
+	go g.run(token)
 	return
 }
 
 func joinGame(conn *websocket.Conn, msg *api.Join, token int64) (g *game, err error) {
-	g, ok := games[msg.Id]
+	var ok bool
+	func() {
+		gamesLock.Lock()
+		defer gamesLock.Unlock()
+		g, ok = games[msg.Id]
+	}()
+
 	if !ok {
 		err = fmt.Errorf("Game %d not found.", msg.Id)
 		return
@@ -82,11 +94,16 @@ func joinGame(conn *websocket.Conn, msg *api.Join, token int64) (g *game, err er
 	return
 }
 
-func (g *game) run() {
+func (g *game) run(createToken int64) {
 	var updates [2]updateRequest
 	var tick int64 = 0
 
 	defer g.cleanup()
+
+	err := writeApiMessage(g.players[0], api.AckCreate{Id: g.id, Player: 0}, createToken, writeTimeout)
+	if err != nil {
+		return
+	}
 
 	// game event loop
 	for {
@@ -100,7 +117,7 @@ func (g *game) run() {
 				joinErr = fmt.Sprintf("Game %d is full, can't join.", g.id)
 			}
 			if joinErr != "" {
-				writeApiMessage(join.conn, api.AckJoin{Error: &joinErr}, join.token)
+				writeApiMessage(join.conn, api.AckJoin{Error: &joinErr}, join.token, writeTimeout)
 				continue
 			}
 
@@ -109,11 +126,12 @@ func (g *game) run() {
 				Error:    nil,
 				Player:   1,
 				RomImage: &g.romImage,
-			}, join.token)
+			}, join.token, writeTimeout)
 
 			// both players joined, start
+			g.timeout.Reset(syncTimeout)
 			g.gameStarted = true
-			err := g.broadcastMsg(api.Start{})
+			err := g.broadcastMsg(api.Start{}, writeTimeout)
 			if err != nil {
 				return
 			}
@@ -136,15 +154,21 @@ func (g *game) run() {
 
 			// all players have sent updates for this tick, sync them
 			if sync {
+				g.timeout.Reset(syncTimeout)
+				for idx := range updates {
+					updates[idx].present = false
+				}
 				err := g.broadcastMsg(api.Sync{
 					KeysDown: [2]string{updates[0].keysDown, updates[1].keysDown},
 					Tick:     tick,
-				})
+				}, writeTimeout)
 				if err != nil {
 					return
 				}
 				tick++
 			}
+		case <-g.timeout.C:
+			return
 		}
 	}
 }
@@ -162,15 +186,18 @@ func (g *game) update(conn *websocket.Conn, msg *api.Update) {
 }
 
 func (g *game) cleanup() {
-	g.broadcastMsg(api.Finish{})
+	g.broadcastMsg(api.Finish{}, writeTimeout)
+
+	gamesLock.Lock()
+	defer gamesLock.Unlock()
 	delete(games, g.id)
 }
 
-func (g *game) broadcastMsg(msg interface{}) (err error) {
+func (g *game) broadcastMsg(msg interface{}, timeout time.Duration) (err error) {
 	for _, player := range g.players {
 		var merr error
 		if player != nil {
-			merr = writeApiMessage(player, msg, 0)
+			merr = writeApiMessage(player, msg, 0, timeout)
 		}
 		if merr != nil {
 			err = merr

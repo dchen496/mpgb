@@ -5,9 +5,12 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"runtime"
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	r := mux.NewRouter()
 
 	// Everything is a WebSockets RPC for simplicity
