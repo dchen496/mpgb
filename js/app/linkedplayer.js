@@ -19,6 +19,10 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
 
   var syncTick = 0;
   var updateTick = 0;
+  var tickLoopRunning = false;
+
+  var frameRate = 59.7275;
+  var lastFrameTime = 0;
 
   // XXX: these callbacks are by type, which is adequate for now.
   // We should probably use the token instead, but then GC is tricky.
@@ -150,7 +154,6 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
         $('#status').text('Waiting for game to start...');
         player = ackJoin.data.player;
         romImage = b64ab.decode(ackJoin.data.rom_image);
-        console.log(romImage.byteLength);
       }
       var link = document.location.href;
       $('#game-link').attr('href', link).text(link);
@@ -190,6 +193,8 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
     }
   }
 
+  var last = 0;
+
   function synchronize(sync) {
     // check and update tick
     if (syncTick != sync.data.tick) {
@@ -216,11 +221,31 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
       }
     }
 
-    while (updateTick < syncTick + delay) {
-      gblink.advance();
+    runTicks();
+  }
+
+  // Runs ticks until the window is full (ie. updateTick == syncTick + delay)
+  // at frameRate. Can be called concurrently.
+  function runTicks() {
+    if (tickLoopRunning)
+      return;
+    tickLoopRunning = true;
+
+    var diff = function() {
+      return lastFrameTime - (new Date()).getTime() + 1000.0 / frameRate;
     }
 
-    // XXX: framerate limiting
+    var advanceOne = function () {
+      if (updateTick < syncTick + delay) {
+        lastFrameTime = (new Date()).getTime();
+        gblink.advance();
+        setTimeout(advanceOne, diff());
+      } else {
+        tickLoopRunning = false;
+      }
+    }
+
+    setTimeout(advanceOne.bind(this, updateTick), diff());
   }
 
   function finish() {
