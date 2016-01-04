@@ -21,6 +21,8 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
   // We should probably use the token instead, but then GC is tricky.
   var msgCallbacks = {};
 
+  var debugMessages = false;
+
   function main() {
     ws = new WebSocket("ws://" + window.location.host + "/ws");
     msgCallbacks['server_info'] = onConnect;
@@ -37,12 +39,14 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
   }
 
   function recvMsg(msg) {
-    //console.log('recv', msg.type, msg.data, msg.token);
+    if (debugMessages)
+      console.log('recv', msg.type, msg.data, msg.token);
     msgCallbacks[msg.type](msg);
   }
 
   function sendMsg(type, data, callback) {
-    //console.log('send', type, data);
+    if (debugMessages)
+      console.log('send', type, data);
     if (callback != null) {
       msgCallbacks[type] = callback;
     }
@@ -62,7 +66,6 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
 
 
   function createGame() {
-
     var go = function() {
       $('#create-panel').show();
 
@@ -174,6 +177,7 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
     gblink.boot();
 
     msgCallbacks['sync'] = synchronize;
+    msgCallbacks['finish'] = finish;
 
     // run the first tick
     gblink.advance();
@@ -211,6 +215,16 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
     // XXX: framerate limiting
   }
 
+  function finish() {
+  }
+
+  function sendUpdate() {
+    sendMsg('update', {
+      'keys_down': JSON.stringify(pressed), // XXX: double JSON wrapping for now...
+      'tick': tick
+    });
+  }
+
   function localFrameCallback(link, gb, fb) {
     // draw to the canvas
     var ctx = canvas.getContext("2d");
@@ -227,19 +241,15 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
     newCanvas.getContext("2d").putImageData(imageData, 0, 0);
     ctx.drawImage(newCanvas, 0, 0, canvas.width, canvas.height);
 
-    // send update
-    sendMsg('update', {
-      'keys_down': JSON.stringify(pressed), // XXX: double JSON wrapping for now...
-      'tick': tick
-    });
-
     if (gb == link.gbc2) {
+      sendUpdate();
       link.pause();
     }
   }
 
   function remoteFrameCallback(link, gb, fb) {
     if (gb == link.gbc2) {
+      sendUpdate();
       link.pause();
     }
   }
