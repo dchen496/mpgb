@@ -12,6 +12,7 @@ const joinTimeout = 10 * time.Second
 const readTimeout = 10 * time.Second
 const syncTimeout = 2 * time.Second
 const writeTimeout = 2 * time.Second
+const delayFrames = 6 // must be at least 1
 
 var upgrader = websocket.Upgrader{
 	HandshakeTimeout: readTimeout,

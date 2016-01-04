@@ -95,12 +95,21 @@ func joinGame(conn *websocket.Conn, msg *api.Join, token int64) (g *game, err er
 }
 
 func (g *game) run(createToken int64) {
-	var updates [2]updateRequest
+	// window of updates
+	var updates [delayFrames][2]updateRequest
+	// lowest tick in window (tick-1 is the last tick synced)
 	var tick int64 = 0
 
 	defer g.cleanup()
 
-	err := writeApiMessage(g.players[0], api.AckCreate{Id: g.id, Player: 0}, createToken, writeTimeout)
+	var err error
+	defer func() {
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	err = writeApiMessage(g.players[0], api.AckCreate{Id: g.id, Player: 0}, createToken, writeTimeout)
 	if err != nil {
 		return
 	}
@@ -131,40 +140,52 @@ func (g *game) run(createToken int64) {
 			// both players joined, start
 			g.timeout.Reset(syncTimeout)
 			g.gameStarted = true
-			err := g.broadcastMsg(api.Start{}, writeTimeout)
+			err := g.broadcastMsg(api.Start{Delay: delayFrames}, writeTimeout)
 			if err != nil {
 				return
 			}
 
 		case update := <-g.updateCh:
-			// check tick (TODO: we need to buffer updates to prevent latency from slowing things down)
-			if update.tick != tick {
-				continue
+			// check that tick is inside update window
+			if update.tick < tick || update.tick >= tick+delayFrames {
+				err = fmt.Errorf("Unexpected tick %d (supposed to be between %d and %d inclusive)",
+					update.tick, tick, tick+delayFrames-1)
+				return
 			}
 
 			// update keystrokes
-			sync := true
 			for idx, player := range g.players {
 				if player == update.conn {
-					updates[idx] = update
-				} else if !updates[idx].present {
-					sync = false
+					updates[update.tick%delayFrames][idx] = update
 				}
 			}
 
-			// all players have sent updates for this tick, sync them
-			if sync {
-				g.timeout.Reset(syncTimeout)
-				for idx := range updates {
-					updates[idx].present = false
+			// try to send syncs
+			for {
+				mt := tick % delayFrames
+				sync := true
+				for idx := range updates[mt] {
+					if !updates[mt][idx].present {
+						sync = false
+					}
 				}
+				if !sync {
+					break
+				}
+
+				g.timeout.Reset(syncTimeout)
+				for idx := range updates[mt] {
+					updates[mt][idx].present = false
+				}
+
 				err := g.broadcastMsg(api.Sync{
-					KeysDown: [2]string{updates[0].keysDown, updates[1].keysDown},
+					KeysDown: [2]string{updates[mt][0].keysDown, updates[mt][1].keysDown},
 					Tick:     tick,
 				}, writeTimeout)
 				if err != nil {
 					return
 				}
+
 				tick++
 			}
 		case <-g.timeout.C:

@@ -19,7 +19,7 @@ type AckJoin struct {
 }
 
 type Start struct {
-	// nothing
+	Delay int `json:"delay"`
 }
 
 type Sync struct {

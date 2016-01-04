@@ -15,7 +15,10 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
   var romImage = null;
 
   var pressed = {};
-  var tick = 0;
+  var delay = null;
+
+  var syncTick = 0;
+  var updateTick = 0;
 
   // XXX: these callbacks are by type, which is adequate for now.
   // We should probably use the token instead, but then GC is tricky.
@@ -157,7 +160,7 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
     go();
   }
 
-  function gameStarted() {
+  function gameStarted(start) {
     $('#status').text('');
     $('#play-panel').show();
 
@@ -179,16 +182,20 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
     msgCallbacks['sync'] = synchronize;
     msgCallbacks['finish'] = finish;
 
-    // run the first tick
-    gblink.advance();
+    // run the first ticks
+    delay = start.data.delay;
+
+    while (updateTick < syncTick + delay) {
+      gblink.advance();
+    }
   }
 
   function synchronize(sync) {
     // check and update tick
-    if (tick != sync.data.tick) {
-      console.log("mismatched tick, got", sync.data.tick, "expected", tick);
+    if (syncTick != sync.data.tick) {
+      console.log("mismatched tick, got", sync.data.tick, "expected", syncTick);
     }
-    tick++;
+    syncTick++;
 
     // update key presses
     var buttons = Object.keys(joypad.buttons);
@@ -209,8 +216,9 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
       }
     }
 
-    // advance the gameboys
-    gblink.advance();
+    while (updateTick < syncTick + delay) {
+      gblink.advance();
+    }
 
     // XXX: framerate limiting
   }
@@ -221,8 +229,9 @@ define(['jquery', './gbc-link', './joypad', './roms', 'base64-arraybuffer', 'jqu
   function sendUpdate() {
     sendMsg('update', {
       'keys_down': JSON.stringify(pressed), // XXX: double JSON wrapping for now...
-      'tick': tick
+      'tick': updateTick
     });
+    updateTick++;
   }
 
   function localFrameCallback(link, gb, fb) {
