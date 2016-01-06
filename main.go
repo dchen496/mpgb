@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 )
 
@@ -22,8 +23,11 @@ func main() {
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	http.Handle("/", r)
-	addr := ":8080"
+	addr := os.Getenv("ADDR")
+	if addr == "" {
+		addr = ":3000"
+	}
 
 	log.Printf("listening on %s\n", addr)
-	http.ListenAndServe(addr, nil)
+	log.Fatalln(http.ListenAndServe(addr, nil))
 }
